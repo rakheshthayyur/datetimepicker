@@ -1,0 +1,28 @@
+{
+  "name": "tempusdominus/datetimepicker",
+  "type": "component",
+  "version": "6.0.0",
+  "description": "Date/time picker widget",
+  "keywords": [
+    "datetimepicker"
+  ],
+  "homepage": "https://github.com/tempusdominus/datetimepicker",
+  "license": "MIT",
+  "require": {
+    "robloach/component-installer": "*",
+    "components/jquery": ">=3.0.0",
+    "moment": ">=2.10.5",
+    "tempusdominus-core": "5.0.0-alpha17"
+  },
+  "extra": {
+    "component": {
+      "scripts": [
+        "src/js/tempusdominus-datetimepicker.js"
+      ],
+      "files": [
+        "build/js/tempusdominus-datetimepicker.min.js",
+        "build/css/tempusdominus-datetimepicker.min.css"
+      ]
+    }
+  }
+}

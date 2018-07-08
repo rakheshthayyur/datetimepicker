@@ -1,0 +1,60 @@
+{
+  "license": "MIT",
+  "main": "dist/js/tempusdominus-datetimepicker.js",
+  "name": "tempusdominus-datetimepicker",
+  "author": "Jonathan Peterson",
+  "bugs": {
+    "url": "https://github.com/tempusdominus/bootstrap-4/issues"
+  },
+  "dependencies": {
+    "jquery": "^3.0",
+    "moment": "^2.22.2",
+    "moment-timezone": "^0.5.11",
+    "popper.js": "^1.12.9"
+  },
+  "peerDependencies": {
+    "jquery": "^3.0",
+    "moment": "^2.17",
+    "moment-timezone": "^0.5.11",
+    "popper.js": "^1.12.9",
+    "tempusdominus-core": "5.0.0"
+  },
+  "description": "A date/time picker component designed to work with Momentjs. For usage, installation and demos see Project Site on GitHub",
+  "devDependencies": {
+    "@babel/core": "^7.0.0-beta.52",
+    "@babel/preset-env": "^7.0.0-beta.52",
+    "grunt": "^1.0.3",
+    "grunt-babel": "8.0.0-beta.0",
+    "grunt-contrib-concat": "^1.0.1",
+    "grunt-contrib-uglify": "latest",
+    "grunt-contrib-watch": "^1.1.0",
+    "grunt-eslint": "^19.0.0",
+    "grunt-jscs": "latest",
+    "grunt-mkdocs": "^0.2.3",
+    "grunt-sass": "3.0.0",
+    "grunt-stamp": "^0.3.0",
+    "grunt-string-replace": "latest",
+    "load-grunt-tasks": "latest",
+    "node-sass": "^4.9.1",
+    "tempusdominus-core": "^5.0.0",
+    "uglify-js": "^2.7.5"
+  },
+  "homepage": "https://tempusdominus.github.io/datetimepicker",
+  "keywords": [
+    "datepicker",
+    "datetimepicker",
+    "timepicker",
+    "moment"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tempusdominus/bootstrap-4.git"
+  },
+  "version": "6.0.0",
+  "files": [
+    "dist",
+    "src/js/**/*.js",
+    "src/sass/**/*.scss",
+    "Gruntfile.js"
+  ]
+}

@@ -1,0 +1,18 @@
+site_name: Tempus Dominus - Date Time Picker
+repo_url: https://github.com/tempusdominus/datetimepicker
+edit_uri: edit/master/src/docs/
+extra_javascript: ['theme\js\base.js','//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/highlight.min.js','theme\js\tempusdominus-datetimepicker.js']
+extra_css: ['theme\css\base.css','//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/styles/github.min.css','theme\css\tempusdominus-datetimepicker.css']
+docs_dir: src/docs
+site_dir: docs
+theme_dir: src/docs/theme
+pages:
+- Tempus Dominus Date Time Picker: 'index.md'
+- Usage: 'Usage.md'
+- Installing: 'Installing.md'
+- Functions: 'Functions.md'
+- Options: 'Options.md'
+- Events: 'Events.md'
+- Change Log: 'Changelog.md'
+- Dev Guide: 'ContributorsGuide.md'
+- FAQs: 'FAQ.md'
