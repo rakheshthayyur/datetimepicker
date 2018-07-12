@@ -1,0 +1,55 @@
+$border-radius: .25rem !default;
+$white: #fff !default;
+$gray-200: #e9ecef !default;
+$body-bg: $white !default;
+$gray-300: #dee2e6 !default;
+$gray-600: #6c757d !default;
+$gray-900: #212529 !default;
+$black: #000 !default;
+
+$body-color: $gray-900 !default;
+
+$zindex-dropdown: 1000 !default;
+$font-size-base: 1rem !default;
+$grid-breakpoints: ( xs: 0, sm: 576px, md: 768px, lg: 992px, xl: 1200px ) !default;
+$border-width: 1px !default;
+
+$bs-datetimepicker-timepicker-font-size: 1.2em !default;
+$bs-datetimepicker-active-bg: #007bff !default;
+$bs-datetimepicker-active-color: $white !default;
+$bs-datetimepicker-border-radius: $border-radius !default;
+$bs-datetimepicker-btn-hover-bg: $gray-200 !default;
+$bs-datetimepicker-disabled-color: $gray-600 !default;
+$bs-datetimepicker-alternate-color: $gray-600 !default;
+$bs-datetimepicker-secondary-border-color: #ccc !default;
+$bs-datetimepicker-secondary-border-color-rgba: rgba(0, 0, 0, 0.2) !default;
+$bs-datetimepicker-primary-border-color: white !default;
+$bs-datetimepicker-text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25) !default;
+
+/*table*/
+$spacer: 1rem !default;
+$table-cell-padding: .75rem !default;
+$table-cell-padding-sm: .3rem !default;
+
+$table-bg: transparent !default;
+$table-accent-bg: rgba($black, .05) !default;
+$table-hover-bg: rgba($black, .075) !default;
+$table-active-bg: $table-hover-bg !default;
+
+$table-border-width: $border-width !default;
+$table-border-color: $gray-300 !default;
+
+/*dropdown*/
+$dropdown-min-width: 10rem !default;
+$dropdown-padding-y: .5rem !default;
+$dropdown-spacer: .125rem !default;
+$dropdown-bg: $white !default;
+$dropdown-border-color: rgba($black, .15) !default;
+$dropdown-border-radius: $border-radius !default;
+$dropdown-border-width: $border-width !default;
+$dropdown-box-shadow: 0 .5rem 1rem rgba($black, .175) !default;
+
+/*collapse*/
+
+$transition-collapse: height .35s ease !default;
+$transition-base: all .2s ease-in-out !default;
