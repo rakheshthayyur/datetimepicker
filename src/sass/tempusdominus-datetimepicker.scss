@@ -1,5 +1,6 @@
 @import "_variables";
-@import "_table";
+@import "_tables";
+@import "_buttons";
 
 .sr-only {
     position: absolute;
@@ -17,9 +18,26 @@
 
     &.dropdown-menu {
         display: block;
-        margin: 2px 0;
-        padding: 4px;
+        //margin: 2px 0;
+        //padding: 4px;
         width: 14rem;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        z-index: $zindex-dropdown;
+        float: left;
+        min-width: $dropdown-min-width;
+        padding: $dropdown-padding-y 0;
+        margin: $dropdown-spacer 0 0; // override default ul
+        font-size: $font-size-base; // Redeclare because nesting can cause inheritance issues
+        color: $body-color;
+        text-align: left; // Ensures proper alignment if parent has it changed (e.g., modal footer)
+        list-style: none;
+        background-color: $dropdown-bg;
+        background-clip: padding-box;
+        border: $dropdown-border-width solid $dropdown-border-color;
+        @include border-radius($dropdown-border-radius);
+        @include box-shadow($dropdown-box-shadow);
 
         &.timepicker-sbs {
             @media (min-width: map-get($grid-breakpoints, 'sm')) {
@@ -96,8 +114,23 @@
         }
     }
 
+    .collapse {
+        &:not(.show) {
+            display: none;
+        }
+    }
+
+    .collapsing {
+        position: relative;
+        height: 0;
+        overflow: hidden;
+        @include transition($transition-collapse);
+    }
+
     .list-unstyled {
         margin: 0;
+        padding-left: 0;
+        list-style: none;
     }
 
     a[data-action] {
@@ -298,7 +331,7 @@
                 cursor: not-allowed;
             }
 
-            span {
+            svg {
                 display: inline-block;
                 width: 54px;
                 height: 54px;
