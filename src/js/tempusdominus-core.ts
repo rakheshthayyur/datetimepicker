@@ -827,7 +827,7 @@ export class TempusDominusCore {
         const daysView = this.widget.querySelectorAll('.datepicker-days')[0],
             daysViewHeader = daysView.querySelectorAll('th')[0],
             html = [];
-        let currentDate: Object, row: HTMLTableRowElement, clsName: string, i: number;
+        let currentDate: moment.Moment, row: HTMLTableRowElement, clsName: string, i: number;
 
         if (!this.hasDate()) {
             return;
@@ -837,7 +837,10 @@ export class TempusDominusCore {
         daysViewHeader[1].attr('title', this.currentOptions.tooltips.selectMonth);
         daysViewHeader[2].querySelectorAll('span')[0].attr('title', this.currentOptions.tooltips.nextMonth);
 
-        daysView.querySelectorAll('.disabled').classList.remove('disabled')[0];
+        this.forEach(daysView.querySelectorAll('.disabled'), (x) => {
+            x.classList.remove('disabled');
+        });
+
         daysViewHeader[1].innerText = this.currentViewDate.format(this.currentOptions.dayViewHeaderFormat);
 
         if (!this.isValid(this.currentViewDate.clone().subtract(1, 'M'), 'M')) {
