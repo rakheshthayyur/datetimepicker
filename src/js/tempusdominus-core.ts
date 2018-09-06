@@ -154,8 +154,28 @@ export class TempusDominusCore {
         }
     }
 
-    private getDatePickerTemplate() {
-        const headTemplate = document.createElement('thead'),
+    private setAttributes(elem, obj) {
+        for (let prop in obj) {
+            if (obj.hasOwnProperty(prop)) {
+                elem[prop] = obj[prop];
+            }
+        }
+    }
+
+    private empty(element) {
+        while (element.firstChild) {
+            element.removeChild(element.firstChild);
+        }
+    }
+    private forEach(array, callback, scope?) {
+        for (let i = 0; i < array.length; i++) {
+            callback.call(scope, i, array[i]);
+        }
+    }
+
+    private getDatePickerTemplate(): HTMLElement[] {
+        const table = document.createElement('table'),
+            headTemplate = document.createElement('thead'),
             headerTr = document.createElement('tr'),
             previousTh = document.createElement('th'),
             previousThIcon = document.createElement('i'),
@@ -168,7 +188,7 @@ export class TempusDominusCore {
             daysDiv = document.createElement('div'),
             monthsDiv = document.createElement('div'),
             yearsDiv = document.createElement('div'),
-            ;
+            decadesDiv = document.createElement('div');
 
         previousTh.classList.add('prev');
         previousTh.setAttribute('data-action', 'previous');
@@ -191,181 +211,263 @@ export class TempusDominusCore {
         bodyTemplate.insertAdjacentElement('beforeend', bodyTd);
         bodyTemplate.insertAdjacentElement('beforeend', bodyTr);
 
+        table.classList.add('table table-sm');
+        table.insertAdjacentElement('beforeend', headTemplate);
+        table.insertAdjacentElement('beforeend', bodyTemplate);
 
-        
+        daysDiv.classList.add('datepicker-days');
+        daysDiv.insertAdjacentElement('beforeend', (table.cloneNode(true)) as HTMLElement);
 
-        return [document.createElement('div').addClass('datepicker-days')
-            .append(document.createElement('table').addClass('table table-sm')
-                .append(headTemplate)
-                .append(document.createElement('tbody'))),
+        monthsDiv.classList.add('datepicker-months');
+        monthsDiv.insertAdjacentElement('beforeend', (table.cloneNode(true)) as HTMLElement);
 
- document.createElement('div').addClass('datepicker-months')
-                    .append(document.createElement('table').addClass('table-condensed')
-                        .append(headTemplate.clone())
-                    .append(contTemplate.clone())),
+        yearsDiv.classList.add('datepicker-years');
+        yearsDiv.insertAdjacentElement('beforeend', (table.cloneNode(true)) as HTMLElement);
 
+        decadesDiv.classList.add('datepicker-decades');
+        decadesDiv.insertAdjacentElement('beforeend', (table.cloneNode(true)) as HTMLElement);
 
-            document.createElement('div').addClass('datepicker-years')
-                            .append(document.createElement('table').addClass('table-condensed')
-                                .append(headTemplate.clone())
-                    .append(contTemplate.clone())),
-
-
-            document.createElement('div').addClass('datepicker-decades')
-                                    .append(document.createElement('table').addClass('table-condensed')
-                                        .append(headTemplate.clone())
-                                        .append(contTemplate.clone()))];
+        return [daysDiv, monthsDiv, yearsDiv, decadesDiv];
     }
 
     private getTimePickerMainTemplate() {
         const topRow = document.createElement('tr'),
             middleRow = document.createElement('tr'),
-            bottomRow = document.createElement('tr');
+            bottomRow = document.createElement('tr'),
+            separator = document.createElement('td'),
+            timePicker = document.createElement('div'),
+            table = document.createElement('table');
+        separator.classList.add('separator');
+        let separatorMark = (separator.cloneNode(true)) as HTMLTableDataCellElement;
+        separatorMark.textContent = ':';
 
         if (this.isEnabled('h')) {
-            topRow
-                .append(document.createElement('td')
-                    .append(document.createElement('a').attr({
-                        href: '#',
-                        tabindex: '-1',
-                        'title': this.currentOptions.tooltips.incrementHour
-                    }).addClass('btn').setAttribute('data-action', 'incrementHours')
-                        .append(document.createElement('span').addClass(this.currentOptions.icons.up))));
-            middleRow
-                .append(document.createElement('td')
-                    .append(document.createElement('span').addClass('timepicker-hour').attr({
-                        'data-time-component': 'hours',
-                        'title': this.currentOptions.tooltips.pickHour
-                    }).setAttribute('data-action', 'showHours')));
-            bottomRow
-                .append(document.createElement('td')
-                    .append(document.createElement('a').attr({
-                        href: '#',
-                        tabindex: '-1',
-                        'title': this.currentOptions.tooltips.decrementHour
-                    }).addClass('btn').setAttribute('data-action', 'decrementHours')
-                        .append(document.createElement('span').addClass(this.currentOptions.icons.down))));
+            const topTd = document.createElement('td'),
+                middleTd = document.createElement('td'),
+                bottomTd = document.createElement('td'),
+                increment = document.createElement('a'),
+                iconUp = document.createElement('span'),
+                innerPicker = document.createElement('span'),
+                decrement = document.createElement('a'),
+                iconDown = document.createElement('span');
+
+
+            iconUp.classList.add(this.currentOptions.icons.up);
+            this.setAttributes(increment, {
+                href: '#',
+                'title': this.currentOptions.tooltips.incrementHour
+            });
+            increment.tabIndex = -1;
+            increment.dataset.action = 'incrementHours';
+            increment.classList.add('btn');
+            increment.insertAdjacentElement('beforeend', iconUp);
+            topTd.insertAdjacentElement('beforeend', increment);
+            topRow.insertAdjacentElement('beforeend', topTd);
+
+            innerPicker.classList.add('timepicker-hour');
+            innerPicker.setAttribute('title', this.currentOptions.tooltips.pickHour);
+            innerPicker.dataset.timeComponent = 'hours';
+            innerPicker.dataset.action = 'showHours';
+            middleTd.insertAdjacentElement('beforeend', innerPicker);
+            middleRow.insertAdjacentElement('beforeend', middleTd);
+
+            iconDown.classList.add(this.currentOptions.icons.down);
+            this.setAttributes(decrement, {
+                href: '#',
+                'title': this.currentOptions.tooltips.decrementHour
+            });
+            decrement.tabIndex = -1;
+            decrement.dataset.action = 'decrementHour';
+            decrement.classList.add('btn');
+            decrement.insertAdjacentElement('beforeend', iconDown);
+            bottomTd.insertAdjacentElement('beforeend', decrement);
+            bottomRow.insertAdjacentElement('beforeend', bottomTd);
         }
         if (this.isEnabled('m')) {
             if (this.isEnabled('h')) {
-                topRow
-                    .append(document.createElement('td').addClass('separator'));
-                middleRow
-                    .append(document.createElement('td').addClass('separator').html(':'));
-                bottomRow
-                    .append(document.createElement('td').addClass('separator'));
+                topRow.insertAdjacentElement('beforeend', (separator.cloneNode(true)) as HTMLElement);
+                middleRow.insertAdjacentElement('beforeend', separatorMark);
+                bottomRow.insertAdjacentElement('beforeend', (separator.cloneNode(true)) as HTMLElement);
             }
-            topRow
-                .append(document.createElement('td')
-                    .append(document.createElement('a').attr({
-                        href: '#',
-                        tabindex: '-1',
-                        'title': this.currentOptions.tooltips.incrementMinute
-                    }).addClass('btn').setAttribute('data-action', 'incrementMinutes')
-                        .append(document.createElement('span').addClass(this.currentOptions.icons.up))));
-            middleRow
-                .append(document.createElement('td')
-                    .append(document.createElement('span').addClass('timepicker-minute').attr({
-                        'data-time-component': 'minutes',
-                        'title': this.currentOptions.tooltips.pickMinute
-                    }).setAttribute('data-action', 'showMinutes')));
-            bottomRow
-                .append(document.createElement('td')
-                    .append(document.createElement('a').attr({
-                        href: '#',
-                        tabindex: '-1',
-                        'title': this.currentOptions.tooltips.decrementMinute
-                    }).addClass('btn').setAttribute('data-action', 'decrementMinutes')
-                        .append(document.createElement('span').addClass(this.currentOptions.icons.down))));
+
+            const topTd = document.createElement('td'),
+                middleTd = document.createElement('td'),
+                bottomTd = document.createElement('td'),
+                increment = document.createElement('a'),
+                iconUp = document.createElement('span'),
+                innerPicker = document.createElement('span'),
+                decrement = document.createElement('a'),
+                iconDown = document.createElement('span');
+
+
+            iconUp.classList.add(this.currentOptions.icons.up);
+            this.setAttributes(increment, {
+                href: '#',
+                'title': this.currentOptions.tooltips.incrementMinute
+            });
+            increment.tabIndex = -1;
+            increment.dataset.action = 'incrementMinute';
+            increment.classList.add('btn');
+            increment.insertAdjacentElement('beforeend', iconUp);
+            topTd.insertAdjacentElement('beforeend', increment);
+            topRow.insertAdjacentElement('beforeend', topTd);
+
+            innerPicker.classList.add('timepicker-minute');
+            innerPicker.setAttribute('title', this.currentOptions.tooltips.pickHour);
+            innerPicker.dataset.timeComponent = 'minutes';
+            innerPicker.dataset.action = 'showMinutes';
+            middleTd.insertAdjacentElement('beforeend', innerPicker);
+            middleRow.insertAdjacentElement('beforeend', middleTd);
+
+            iconDown.classList.add(this.currentOptions.icons.down);
+            this.setAttributes(decrement, {
+                href: '#',
+                'title': this.currentOptions.tooltips.decrementHour
+            });
+            decrement.tabIndex = -1;
+            decrement.dataset.action = 'decrementMinutes';
+            decrement.classList.add('btn');
+            decrement.insertAdjacentElement('beforeend', iconDown);
+            bottomTd.insertAdjacentElement('beforeend', decrement);
+            bottomRow.insertAdjacentElement('beforeend', bottomTd);
         }
         if (this.isEnabled('s')) {
             if (this.isEnabled('m')) {
-                topRow
-                    .append(document.createElement('td').addClass('separator'));
-                middleRow
-                    .append(document.createElement('td').addClass('separator').html(':'));
-                bottomRow
-                    .append(document.createElement('td').addClass('separator'));
+                topRow.insertAdjacentElement('beforeend', (separator.cloneNode(true)) as HTMLElement);
+                middleRow.insertAdjacentElement('beforeend', separatorMark);
+                bottomRow.insertAdjacentElement('beforeend', (separator.cloneNode(true)) as HTMLElement);
             }
-            topRow
-                .append(document.createElement('td')
-                    .append(document.createElement('a').attr({
-                        href: '#',
-                        tabindex: '-1',
-                        'title': this.currentOptions.tooltips.incrementSecond
-                    }).addClass('btn').setAttribute('data-action', 'incrementSeconds')
-                        .append(document.createElement('span').addClass(this.currentOptions.icons.up))));
-            middleRow
-                .append(document.createElement('td')
-                    .append(document.createElement('span').addClass('timepicker-second').attr({
-                        'data-time-component': 'seconds',
-                        'title': this.currentOptions.tooltips.pickSecond
-                    }).setAttribute('data-action', 'showSeconds')));
-            bottomRow
-                .append(document.createElement('td')
-                    .append(document.createElement('a').attr({
-                        href: '#',
-                        tabindex: '-1',
-                        'title': this.currentOptions.tooltips.decrementSecond
-                    }).addClass('btn').setAttribute('data-action', 'decrementSeconds')
-                        .append(document.createElement('span').addClass(this.currentOptions.icons.down))));
-        }
 
+            if (this.isEnabled('h')) {
+                topRow.insertAdjacentElement('beforeend', (separator.cloneNode(true)) as HTMLElement);
+                middleRow.insertAdjacentElement('beforeend', separatorMark);
+                bottomRow.insertAdjacentElement('beforeend', (separator.cloneNode(true)) as HTMLElement);
+            }
+
+            const topTd = document.createElement('td'),
+                middleTd = document.createElement('td'),
+                bottomTd = document.createElement('td'),
+                increment = document.createElement('a'),
+                iconUp = document.createElement('span'),
+                innerPicker = document.createElement('span'),
+                decrement = document.createElement('a'),
+                iconDown = document.createElement('span');
+
+
+            iconUp.classList.add(this.currentOptions.icons.up);
+            this.setAttributes(increment, {
+                href: '#',
+                'title': this.currentOptions.tooltips.incrementMinute
+            });
+            increment.tabIndex = -1;
+            increment.dataset.action = 'incrementSeconds';
+            increment.classList.add('btn');
+            increment.insertAdjacentElement('beforeend', iconUp);
+            topTd.insertAdjacentElement('beforeend', increment);
+            topRow.insertAdjacentElement('beforeend', topTd);
+
+            innerPicker.classList.add('timepicker-second');
+            innerPicker.setAttribute('title', this.currentOptions.tooltips.pickHour);
+            innerPicker.dataset.timeComponent = 'seconds';
+            innerPicker.dataset.action = 'showSeconds';
+            middleTd.insertAdjacentElement('beforeend', innerPicker);
+            middleRow.insertAdjacentElement('beforeend', middleTd);
+
+            iconDown.classList.add(this.currentOptions.icons.down);
+            this.setAttributes(decrement, {
+                href: '#',
+                'title': this.currentOptions.tooltips.decrementHour
+            });
+            decrement.tabIndex = -1;
+            decrement.dataset.action = 'decrementSeconds';
+            decrement.classList.add('btn');
+            decrement.insertAdjacentElement('beforeend', iconDown);
+            bottomTd.insertAdjacentElement('beforeend', decrement);
+            bottomRow.insertAdjacentElement('beforeend', bottomTd);
+        }
         if (!this.use24Hours) {
-            topRow
-                .append(document.createElement('td').addClass('separator'));
-            middleRow
-                .append(document.createElement('td')
-                    .append(document.createElement('button').addClass('btn btn-primary').attr({
-                        'data-action': 'togglePeriod',
-                        tabindex: '-1',
-                        'title': this.currentOptions.tooltips.togglePeriod
-                    })));
-            bottomRow
-                .append(document.createElement('td').addClass('separator'));
+            topRow.insertAdjacentElement('beforeend', (separator.cloneNode(true)) as HTMLElement);
+
+            const td = document.createElement('td'), btn = document.createElement('button');
+
+            btn.classList.add('btn btn-primary');
+            btn.setAttribute('title', this.currentOptions.tooltips.togglePeriod);
+            btn.dataset.action = 'togglePeriod';
+            btn.tabIndex = -1;
+
+            td.insertAdjacentElement('beforeend', btn);
+
+            middleRow.insertAdjacentElement('beforeend', td);
+
+            bottomRow.insertAdjacentElement('beforeend', (separator.cloneNode(true)) as HTMLElement);
         }
 
-        return document.createElement('div').addClass('timepicker-picker')
-            .append(document.createElement('table').addClass('table-condensed')
-                .append([topRow, middleRow, bottomRow]));
+        timePicker.classList.add('timepicker-picker');
+
+        table.classList.add('table table-sm');
+        table.insertAdjacentElement('beforeend', topRow);
+        table.insertAdjacentElement('beforeend', middleRow);
+        table.insertAdjacentElement('beforeend', bottomRow);
+
+        timePicker.insertAdjacentElement('beforeend', table);
+
+        return timePicker;
     }
 
     private getTimePickerTemplate() {
-        const hoursView = document.createElement('div').addClass('timepicker-hours')
-            .append(document.createElement('table').addClass('table-condensed')),
-            minutesView = document.createElement('div').addClass('timepicker-minutes')
-                .append(document.createElement('table').addClass('table-condensed')),
-            secondsView = document.createElement('div').addClass('timepicker-seconds')
-                .append(document.createElement('table').addClass('table-condensed')),
-            ret = [this.getTimePickerMainTemplate()];
+        const table = document.createElement('table'),
+            hoursView = document.createElement('div'),
+            minutesView = document.createElement('div'),
+            secondsView = document.createElement('div'),
+            returnView = [this.getTimePickerMainTemplate()];
+
+        table.classList.add('table table-sm');
+        hoursView.classList.add('timepicker-hours');
+        hoursView.insertAdjacentElement('beforeend', (table.cloneNode(true)) as HTMLElement);
+
+        minutesView.classList.add('timepicker-minutes');
+        minutesView.insertAdjacentElement('beforeend', (table.cloneNode(true)) as HTMLElement);
+
+        secondsView.classList.add('timepicker-seconds');
+        secondsView.insertAdjacentElement('beforeend', (table.cloneNode(true)) as HTMLElement);
 
         if (this.isEnabled('h')) {
-            ret.push(hoursView);
+            returnView.push(hoursView);
         }
         if (this.isEnabled('m')) {
-            ret.push(minutesView);
+            returnView.push(minutesView);
         }
         if (this.isEnabled('s')) {
-            ret.push(secondsView);
+            returnView.push(secondsView);
         }
 
-        return ret;
+        return returnView;
     }
 
     private getToolbar() {
-        const row = [];
+        const rows: HTMLTableDataCellElement[] = [],
+            table = document.createElement('table'),
+            tBody = document.createElement('tbody'),
+            tr = document.createElement('tr');
+
         if (this.currentOptions.buttons.showToday) {
-            row.push(document.createElement('td')
-                .append(document.createElement('a').attr({
-                    href: '#',
-                    tabindex: '-1',
-                    'data-action': 'today',
-                    'title': this.currentOptions.tooltips.today
-                })
-                    .append(document.createElement('span').addClass(this.currentOptions.icons.today))));
+            const td = document.createElement('td'), a = document.createElement('a'), span = document.createElement('span');
+
+            this.setAttributes(a, {
+                href: '#',
+                'title': this.currentOptions.tooltips.today
+            });
+            a.tabIndex = -1;
+            a.dataset.action = 'today';
+
+            span.classList.add(this.currentOptions.icons.today);
+            a.insertAdjacentElement('beforeend', span);
+            td.insertAdjacentElement('beforeend', a);
+
+            rows.push(td);
         }
         if (!this.currentOptions.sideBySide && this.hasDate() && this.hasTime()) {
-            let title, icon;
+            let title: string, icon: string;
             if (this.currentOptions.viewMode === 'times') {
                 title = this.currentOptions.tooltips.selectDate;
                 icon = this.currentOptions.icons.date;
@@ -373,119 +475,163 @@ export class TempusDominusCore {
                 title = this.currentOptions.tooltips.selectTime;
                 icon = this.currentOptions.icons.time;
             }
-            row.push(document.createElement('td')
-                .append(document.createElement('a').attr({
-                    href: '#',
-                    tabindex: '-1',
-                    'data-action': 'togglePicker',
-                    'title': title
-                })
-                    .append(document.createElement('span').addClass(icon))));
+
+            const td = document.createElement('td'), a = document.createElement('a'), span = document.createElement('span');
+
+            this.setAttributes(a, {
+                href: '#',
+                'title': title
+            });
+            a.tabIndex = -1;
+            a.dataset.action = 'togglePicker';
+
+            span.classList.add(icon);
+            a.insertAdjacentElement('beforeend', span);
+            td.insertAdjacentElement('beforeend', a);
+
+            rows.push(td);
         }
         if (this.currentOptions.buttons.showClear) {
-            row.push(document.createElement('td')
-                .append(document.createElement('a').attr({
-                    href: '#',
-                    tabindex: '-1',
-                    'data-action': 'clear',
-                    'title': this.currentOptions.tooltips.clear
-                })
-                    .append(document.createElement('span').addClass(this.currentOptions.icons.clear))));
+            const td = document.createElement('td'), a = document.createElement('a'), span = document.createElement('span');
+
+            this.setAttributes(a, {
+                href: '#',
+                'title': this.currentOptions.tooltips.clear
+            });
+            a.tabIndex = -1;
+            a.dataset.action = 'clear';
+
+            span.classList.add(this.currentOptions.icons.clear);
+            a.insertAdjacentElement('beforeend', span);
+            td.insertAdjacentElement('beforeend', a);
+
+            rows.push(td);
         }
         if (this.currentOptions.buttons.showClose) {
-            row.push(document.createElement('td')
-                .append(document.createElement('a').attr({
-                    href: '#',
-                    tabindex: '-1',
-                    'data-action': 'close',
-                    'title': this.currentOptions.tooltips.close
-                })
-                    .append(document.createElement('span').addClass(this.currentOptions.icons.close))));
+            const td = document.createElement('td'), a = document.createElement('a'), span = document.createElement('span');
+
+            this.setAttributes(a, {
+                href: '#',
+                'title': this.currentOptions.tooltips.clear
+            });
+            a.tabIndex = -1;
+            a.dataset.action = 'close';
+
+            span.classList.add(this.currentOptions.icons.close);
+            a.insertAdjacentElement('beforeend', span);
+            td.insertAdjacentElement('beforeend', a);
+
+            rows.push(td);
         }
-        return row.length === 0 ? '' : document.createElement('table').addClass('table-condensed')
-            .append(document.createElement('tbody')
-                .append(document.createElement('tr')
-                    .append(row)));
+
+        if (rows.length === 0) {
+            return '';
+        }
+
+        rows.forEach(row => tr.insertAdjacentElement('beforeend', row));
+        tBody.insertAdjacentElement('beforeend', tr);
+        table.insertAdjacentElement('beforeend', tBody);
+
+
+        rows.forEach(el => document.body.appendChild(el));
+
+        return table;
     }
 
     private getTemplate() {
-        const template = document.createElement('div').addClass('bootstrap-datetimepicker-widget dropdown-menu'),
-            dateView = document.createElement('div').addClass('datepicker')
-                .append(this.getDatePickerTemplate()),
-            timeView = document.createElement('div').addClass('timepicker')
-                .append(this.getTimePickerTemplate()),
-            content = document.createElement('ul').addClass('list-unstyled'),
-            toolbar = document.createElement('li').addClass(`picker-switch${this.currentOptions.collapse ? ' accordion-toggle' : ''}`)
-                .append(this.getToolbar());
+        const template = document.createElement('div'),
+            dateView = document.createElement('div'),
+            timeView = document.createElement('div'),
+            content = document.createElement('ul'),
+            toolbar = document.createElement('li'),
+            toolbarTemplate = this.getToolbar();
+
+        template.classList.add('bootstrap-datetimepicker-widget dropdown-menu');
+        dateView.classList.add('datepicker');
+        this.getDatePickerTemplate().forEach(htmlElement => dateView.insertAdjacentElement('beforeend', htmlElement));
+
+        timeView.classList.add('timepicker');
+        this.getTimePickerTemplate().forEach(htmlElement => timeView.insertAdjacentElement('beforeend', htmlElement));
+
+        content.classList.add('list-unstyled');
+        toolbar.classList.add(`picker-switch${this.currentOptions.collapse ? ' accordion-toggle' : ''}`);
+        if (toolbarTemplate !== '') toolbar.insertAdjacentElement('beforeend', toolbarTemplate);
 
         if (this.currentOptions.inline) {
-            template.removeClass('dropdown-menu');
+            template.classList.remove('dropdown-menu');
         }
 
         if (this.use24Hours) {
-            template.addClass('usetwentyfour');
+            template.classList.add('usetwentyfour');
         }
         if (this.isEnabled('s') && !this.use24Hours) {
-            template.addClass('wider');
+            template.classList.add('wider');
         }
 
         if (this.currentOptions.sideBySide && this.hasDate() && this.hasTime()) {
-            template.addClass('timepicker-sbs');
+            template.classList.add('timepicker-sbs');
             if (this.currentOptions.toolbarPlacement === 'top') {
-                template
-                    .append(toolbar);
+                template.insertAdjacentElement('beforeend', toolbar);
             }
-            template
-                .append(document.createElement('div').addClass('row')
-                    .append(dateView.addClass('col-md-6'))
-                    .append(timeView.addClass('col-md-6')));
+            const row = document.createElement('div');
+            row.classList.add('row');
+            dateView.classList.add('col-md-6');
+            timeView.classList.add('col-md-6');
+            row.insertAdjacentElement('beforeend', dateView);
+            row.insertAdjacentElement('beforeend', timeView);
+
+
+            template.insertAdjacentElement('beforeend', row);
             if (this.currentOptions.toolbarPlacement === 'bottom' || this.currentOptions.toolbarPlacement === 'default') {
-                template
-                    .append(toolbar);
+                template.insertAdjacentElement('beforeend', toolbar);
             }
             return template;
         }
 
         if (this.currentOptions.toolbarPlacement === 'top') {
-            content
-                .append(toolbar);
+            content.insertAdjacentElement('beforeend', toolbar);
         }
         if (this.hasDate()) {
-            content
-                .append(document.createElement('li').addClass(this.currentOptions.collapse && this.hasTime() ? 'collapse' : '')
-                    .addClass((this.currentOptions.collapse && this.hasTime() && this.currentOptions.viewMode === 'times' ? '' : 'show'))
+            const li = document.createElement('li');
+            li.classList.add(this.currentOptions.collapse && this.hasTime() ? 'collapse' : '');
+            li.classList.add((this.currentOptions.collapse && this.hasTime() && this.currentOptions.viewMode === 'times'
+                ? ''
+                : 'show'));
+            li.insertAdjacentElement('beforeend', dateView);
 
-                    .append(dateView));
+            content.insertAdjacentElement('beforeend', li);
         }
         if (this.currentOptions.toolbarPlacement === 'default') {
-            content
-                .append(toolbar);
+            content.insertAdjacentElement('beforeend', toolbar);
         }
         if (this.hasTime()) {
-            content
-                .append(document.createElement('li').addClass(this.currentOptions.collapse && this.hasDate() ? 'collapse' : '')
-                    .addClass((this.currentOptions.collapse && this.hasDate() && this.currentOptions.viewMode === 'times' ? 'show' : ''))
+            const li = document.createElement('li');
+            li.classList.add(this.currentOptions.collapse && this.hasDate() ? 'collapse' : '');
+            li.classList.add((this.currentOptions.collapse && this.hasDate() && this.currentOptions.viewMode === 'times'
+                ? 'show'
+                : ''));
+            li.insertAdjacentElement('beforeend', timeView);
 
-                    .append(timeView));
+            content.insertAdjacentElement('beforeend', li);
         }
         if (this.currentOptions.toolbarPlacement === 'bottom') {
-            content
-                .append(toolbar);
+            content.insertAdjacentElement('beforeend', toolbar);
         }
-        return template
-            .append(content);
+
+        template.insertAdjacentElement('beforeend', content);
+        return template;
     }
 
     private place(e?) {
         const self = (e && e.data && e.data.picker) || this;
         if (self.options.sideBySide) {
             self.element
-                .append(self.widget);
+                .insertAdjacentElement('beforeend', self.widget);
             return;
         }
         if (self.options.widgetParent) {
             self.options.widgetParent
-                .append(self.widget);
+                .insertAdjacentElement('beforeend', self.widget);
         } else if (self.element.is('input')) {
             self.element.after(self.widget).parent();
         } else {
@@ -508,59 +654,83 @@ export class TempusDominusCore {
             currentDate = this.currentViewDate.clone().startOf('w').startOf('d');
 
         if (this.currentOptions.calendarWeeks) {
-            row
-                .append(document.createElement('th').addClass('cw').text('#'));
+            const th = document.createElement('th');
+            th.classList.add('cw');
+            th.innerText = currentDate.format('dd');
+
+            row.insertAdjacentElement('beforeend', th);
         }
 
         while (currentDate.isBefore(this.currentViewDate.clone().endOf('w'))) {
-            row
-                .append(document.createElement('th').addClass('dow').text(currentDate.format('dd')));
+            const th = document.createElement('th');
+            th.classList.add('dow');
+            th.innerText = '#';
+
+            row.insertAdjacentElement('beforeend', th);
             currentDate.add(1, 'd');
         }
         this.widget.querySelectorAll('.datepicker-days thead')[0]
-            .append(row);
+            .insertAdjacentElement('beforeend', row);
     }
 
     private fillMonths() {
-        const spans = [],
-            monthsShort = this.currentViewDate.clone().startOf('y').startOf('d');
+        const spans: HTMLSpanElement[] = [],
+            monthsShort = this.currentViewDate.clone().startOf('y').startOf('d'),
+            monthTd =  this.widget.querySelectorAll('.datepicker-months td')[0];
         while (monthsShort.isSame(this.currentViewDate, 'y')) {
-            spans.push(document.createElement('span').setAttribute('data-action', 'selectMonth').addClass('month').text(monthsShort.format('MMM')));
+            const span = document.createElement('span');
+            span.setAttribute('data-action', 'selectMonth');
+            span.classList.add('month');
+            span.innerText = monthsShort.format('MMM');
+
+            spans.push(span);
             monthsShort.add(1, 'M');
         }
-        this.widget.querySelectorAll('.datepicker-months td')[0].empty()
-            .append(spans);
+
+        this.empty(monthTd);
+        spans.forEach(span => monthTd.insertAdjacentElement('beforeend', span));
     }
 
     private updateMonths() {
         const monthsView = this.widget.querySelectorAll('.datepicker-months')[0],
-            monthsViewHeader = monthsView.querySelectorAll('th')[0],
-            months = monthsView.querySelectorAll('tbody')[0].querySelectorAll('span')[0], self = this;
+            monthsViewHeader = monthsView.querySelectorAll('th'),
+            months = monthsView.querySelectorAll('tbody')[0].querySelectorAll('span'),
+            disabled = monthsView.querySelectorAll('.disabled');
 
-        monthsViewHeader.eq(0).querySelectorAll('span')[0].attr('title', this.currentOptions.tooltips.prevYear);
-        monthsViewHeader.eq(1).attr('title', this.currentOptions.tooltips.selectYear);
-        monthsViewHeader.eq(2).querySelectorAll('span')[0].attr('title', this.currentOptions.tooltips.nextYear);
+        monthsViewHeader[0].querySelectorAll('span')[0].setAttribute('title', this.currentOptions.tooltips.prevYear);
+        monthsViewHeader[1].setAttribute('title', this.currentOptions.tooltips.selectYear);
+        monthsViewHeader[2].querySelectorAll('span')[0].setAttribute('title', this.currentOptions.tooltips.nextYear);
+        
+        this.forEach(monthsView.querySelectorAll('.disabled'), (x) => {
+            x.classList.remove('disabled');
+        });
 
-        monthsView.querySelectorAll('.disabled').removeClass('disabled')[0];
-
+        for (let i = 0; i < disabled.length; ++i) {
+            disabled[i].classList.remove('disabled');
+        }
+        
         if (!this.isValid(this.currentViewDate.clone().subtract(1, 'y'), 'y')) {
-            monthsViewHeader.eq(0).addClass('disabled');
+            monthsViewHeader[0].classList.add('disabled');
         }
 
-        monthsViewHeader.eq(1).text(this.currentViewDate.year());
+        monthsViewHeader[1].innerText = this.currentViewDate.year() + '';
 
         if (!this.isValid(this.currentViewDate.clone().add(1, 'y'), 'y')) {
-            monthsViewHeader.eq(2).addClass('disabled');
+            monthsViewHeader[2].classList.add('disabled');
         }
 
-        months.removeClass('active');
+        this.forEach(months, (x) => {
+            x.classList.remove('active');
+        });
+
+
         if (this.getLastPickedDate().isSame(this.currentViewDate, 'y') && !this.unset) {
-            months.eq(this.getLastPickedDate().month()).addClass('active');
+            months[this.getLastPickedDate().month()].classList.add('active');
         }
 
-        months.each(function (index) {
-            if (!self.isValid(self.viewDate.clone().month(index), 'M')) {
-                $(this).addClass('disabled');
+        this.forEach(months, (index, value) => {
+            if (!this.isValid(this.currentViewDate.clone().month(index), 'M')) {
+                value.classList.add('disabled');
             }
         });
     }
@@ -581,20 +751,22 @@ export class TempusDominusCore {
             endYear = this.currentViewDate.clone().year(yearCaps[1]);
         let html = '';
 
-        yearsViewHeader.eq(0).querySelectorAll('span')[0].attr('title', this.currentOptions.tooltips.prevDecade);
-        yearsViewHeader.eq(1).attr('title', this.currentOptions.tooltips.selectDecade);
-        yearsViewHeader.eq(2).querySelectorAll('span')[0].attr('title', this.currentOptions.tooltips.nextDecade);
+        yearsViewHeader[0].querySelectorAll('span')[0].attr('title', this.currentOptions.tooltips.prevDecade);
+        yearsViewHeader[1].attr('title', this.currentOptions.tooltips.selectDecade);
+        yearsViewHeader[2].querySelectorAll('span')[0].attr('title', this.currentOptions.tooltips.nextDecade);
 
-        yearsView.querySelectorAll('.disabled').removeClass('disabled')[0];
+        this.forEach(yearsView.querySelectorAll('.disabled'), (x) => {
+            x.classList.remove('disabled');
+        });
 
         if (this.currentOptions.minDate && this.currentOptions.minDate.isAfter(startYear, 'y')) {
-            yearsViewHeader.eq(0).addClass('disabled');
+            yearsViewHeader[0].classList.add('disabled');
         }
 
-        yearsViewHeader.eq(1).text(`${startYear.year()}-${endYear.year()}`);
+        yearsViewHeader[1].innerText = `${startYear.year()}-${endYear.year()}`;
 
         if (this.currentOptions.maxDate && this.currentOptions.maxDate.isBefore(endYear, 'y')) {
-            yearsViewHeader.eq(2).addClass('disabled');
+            yearsViewHeader[2].classList.add('disabled');
         }
 
         html += `<span data-action="selectYear" class="year old${!this.isValid(startYear, 'y') ? ' disabled' : ''}">${startYear.year() - 1}</span>`;
@@ -604,7 +776,7 @@ export class TempusDominusCore {
         }
         html += `<span data-action="selectYear" class="year old${!this.isValid(startYear, 'y') ? ' disabled' : ''}">${startYear.year()}</span>`;
 
-        yearsView.querySelectorAll('td')[0].html(html);
+        yearsView.querySelectorAll('td')[0].innerHTML =html;
     }
 
     private updateDecades() {
@@ -618,19 +790,19 @@ export class TempusDominusCore {
             endDecadeYear,
             html = '';
 
-        decadesViewHeader.eq(0).querySelectorAll('span')[0].attr('title', this.currentOptions.tooltips.prevCentury);
-        decadesViewHeader.eq(2).querySelectorAll('span')[0].attr('title', this.currentOptions.tooltips.nextCentury);
+        decadesViewHeader[0].querySelectorAll('span')[0].attr('title', this.currentOptions.tooltips.prevCentury);
+        decadesViewHeader[2].querySelectorAll('span')[0].attr('title', this.currentOptions.tooltips.nextCentury);
 
-        decadesView.querySelectorAll('.disabled').removeClass('disabled')[0];
+        decadesView.querySelectorAll('.disabled').classList.remove('disabled')[0];
 
         if (startDecade.year() === 0 || this.currentOptions.minDate && this.currentOptions.minDate.isAfter(startDecade, 'y')) {
-            decadesViewHeader.eq(0).addClass('disabled');
+            decadesViewHeader[0].classList.add('disabled');
         }
 
-        decadesViewHeader.eq(1).text(`${startDecade.year()}-${endDecade.year()}`);
+        decadesViewHeader[1].innerText = `${startDecade.year()}-${endDecade.year()}`;
 
         if (this.currentOptions.maxDate && this.currentOptions.maxDate.isBefore(endDecade, 'y')) {
-            decadesViewHeader.eq(2).addClass('disabled');
+            decadesViewHeader[2].classList.add('disabled');
         }
 
         if (startDecade.year() - 10 < 0) {
@@ -655,24 +827,24 @@ export class TempusDominusCore {
         const daysView = this.widget.querySelectorAll('.datepicker-days')[0],
             daysViewHeader = daysView.querySelectorAll('th')[0],
             html = [];
-        let currentDate, row, clsName, i;
+        let currentDate: Object, row: HTMLTableRowElement, clsName: string, i: number;
 
         if (!this.hasDate()) {
             return;
         }
 
-        daysViewHeader.eq(0).querySelectorAll('span')[0].attr('title', this.currentOptions.tooltips.prevMonth);
-        daysViewHeader.eq(1).attr('title', this.currentOptions.tooltips.selectMonth);
-        daysViewHeader.eq(2).querySelectorAll('span')[0].attr('title', this.currentOptions.tooltips.nextMonth);
+        daysViewHeader[0].querySelectorAll('span')[0].attr('title', this.currentOptions.tooltips.prevMonth);
+        daysViewHeader[1].attr('title', this.currentOptions.tooltips.selectMonth);
+        daysViewHeader[2].querySelectorAll('span')[0].attr('title', this.currentOptions.tooltips.nextMonth);
 
-        daysView.querySelectorAll('.disabled').removeClass('disabled')[0];
-        daysViewHeader.eq(1).text(this.currentViewDate.format(this.currentOptions.dayViewHeaderFormat));
+        daysView.querySelectorAll('.disabled').classList.remove('disabled')[0];
+        daysViewHeader[1].innerText = this.currentViewDate.format(this.currentOptions.dayViewHeaderFormat);
 
         if (!this.isValid(this.currentViewDate.clone().subtract(1, 'M'), 'M')) {
-            daysViewHeader.eq(0).addClass('disabled');
+            daysViewHeader[0].classList.add('disabled');
         }
         if (!this.isValid(this.currentViewDate.clone().add(1, 'M'), 'M')) {
-            daysViewHeader.eq(2).addClass('disabled');
+            daysViewHeader[2].classList.add('disabled');
         }
 
         currentDate = this.currentViewDate.clone().startOf('M').startOf('w').startOf('d');
@@ -683,7 +855,7 @@ export class TempusDominusCore {
                 row = document.createElement('tr');
                 if (this.currentOptions.calendarWeeks) {
                     row
-                        .append(`<td class="cw">${currentDate.week()}</td>`);
+                        .insertAdjacentElement('beforeend', `<td class="cw">${currentDate.week()}</td>`);
                 }
                 html.push(row);
             }
@@ -716,12 +888,12 @@ export class TempusDominusCore {
                 clsName += ' weekend';
             }
             row
-                .append(`<td data-action="selectDay" data-day="${currentDate.format('L')}" class="day${clsName}">${currentDate.date()}</td>`);
+                .insertAdjacentElement('beforeend', `<td data-action="selectDay" data-day="${currentDate.format('L')}" class="day${clsName}">${currentDate.date()}</td>`);
             currentDate.add(1, 'd');
         }
 
         daysView.querySelectorAll('tbody')[0].empty()
-            .append(html);
+            .insertAdjacentElement('beforeend', html);
 
         this.updateMonths();
 
@@ -745,11 +917,11 @@ export class TempusDominusCore {
                 html.push(row);
             }
             row
-                .append(`<td data-action="selectHour" class="hour${!this.isValid(currentHour, 'h') ? ' disabled' : ''}">${currentHour.format(this.use24Hours ? 'HH' : 'hh')}</td>`);
+                .insertAdjacentElement('beforeend', `<td data-action="selectHour" class="hour${!this.isValid(currentHour, 'h') ? ' disabled' : ''}">${currentHour.format(this.use24Hours ? 'HH' : 'hh')}</td>`);
             currentHour.add(1, 'h');
         }
         table.empty()
-            .append(html);
+            .insertAdjacentElement('beforeend', html);
     }
 
     private fillMinutes() {
@@ -765,11 +937,11 @@ export class TempusDominusCore {
                 html.push(row);
             }
             row
-                .append(`<td data-action="selectMinute" class="minute${!this.isValid(currentMinute, 'm') ? ' disabled' : ''}">${currentMinute.format('mm')}</td>`);
+                .insertAdjacentElement('beforeend', `<td data-action="selectMinute" class="minute${!this.isValid(currentMinute, 'm') ? ' disabled' : ''}">${currentMinute.format('mm')}</td>`);
             currentMinute.add(step, 'm');
         }
         table.empty()
-            .append(html);
+            .insertAdjacentElement('beforeend', html);
     }
 
     private fillSeconds() {
@@ -784,33 +956,33 @@ export class TempusDominusCore {
                 html.push(row);
             }
             row
-                .append(`<td data-action="selectSecond" class="second${!this.isValid(currentSecond, 's') ? ' disabled' : ''}">${currentSecond.format('ss')}</td>`);
+                .insertAdjacentElement('beforeend', `<td data-action="selectSecond" class="second${!this.isValid(currentSecond, 's') ? ' disabled' : ''}">${currentSecond.format('ss')}</td>`);
             currentSecond.add(5, 's');
         }
 
         table.empty()
-            .append(html);
+            .insertAdjacentElement('beforeend', html);
     }
 
     private fillTime() {
-        let toggle, newDate;
+        let toggle: Element, newDate: Object;
         const timeComponents = this.widget.querySelectorAll('.timepicker span[data-time-component]')[0];
 
         if (!this.use24Hours) {
             toggle = this.widget.querySelectorAll('.timepicker [data-action=togglePeriod]')[0];
             newDate = this.getLastPickedDate().clone().add(this.getLastPickedDate().hours() >= 12 ? -12 : 12, 'h');
 
-            toggle.text(this.getLastPickedDate().format('A'));
+            toggle.innerText = this.getLastPickedDate().format('A');
 
             if (this.isValid(newDate, 'h')) {
-                toggle.removeClass('disabled');
+                toggle.classList.remove('disabled');
             } else {
-                toggle.addClass('disabled');
+                toggle.classList.add('disabled');
             }
         }
-        timeComponents.filter('[data-time-component=hours]').text(this.getLastPickedDate().format(`${this.use24Hours ? 'HH' : 'hh'}`));
-        timeComponents.filter('[data-time-component=minutes]').text(this.getLastPickedDate().format('mm'));
-        timeComponents.filter('[data-time-component=seconds]').text(this.getLastPickedDate().format('ss'));
+        timeComponents.filter('[data-time-component=hours]').innerText = this.getLastPickedDate().format(`${this.use24Hours ? 'HH' : 'hh'}`);
+        timeComponents.filter('[data-time-component=minutes]').innerText = this.getLastPickedDate().format('mm');
+        timeComponents.filter('[data-time-component=seconds]').innerText = this.getLastPickedDate().format('ss');
 
         this.fillHours();
         this.fillMinutes();
@@ -901,7 +1073,7 @@ export class TempusDominusCore {
                         day.add(1, 'M');
                     }
 
-                    var selectDate = day.date(parseInt($(e.target).text(), 10)), index;
+                    var selectDate = day.date(parseInt($(e.target).text(), 10)), index: number;
                     if (this.currentOptions.allowMultidate) {
                         index = this.datesFormatted.indexOf(selectDate.format('YYYY-MM-DD'));
                         if (index !== -1) {
@@ -992,8 +1164,8 @@ export class TempusDominusCore {
                             closed.collapse('show');
                         } else {
                             // otherwise just toggle in class on the two views
-                            expanded.removeClass('show');
-                            closed.addClass('show');
+                            expanded.classList.remove('show');
+                            closed.classList.add('show');
                         }
                         $span.toggleClass(this.currentOptions.icons.time + ' ' + this.currentOptions.icons.date);
 
@@ -1023,7 +1195,7 @@ export class TempusDominusCore {
                 break;
             case 'selectHour':
                 {
-                    let hour = parseInt($(e.target).text(), 10);
+                    let hour = parseInt($(e.target).innerText = ), 10;
 
                     if (!this.use24Hours) {
                         if (lastPicked.hours() >= 12) {
@@ -1046,7 +1218,7 @@ export class TempusDominusCore {
                     break;
                 }
             case 'selectMinute':
-                this.setValue(lastPicked.clone().minutes(parseInt($(e.target).text(), 10)), this.getLastPickedDateIndex());
+                this.setValue(lastPicked.clone().minutes(parseInt($(e.target).innerText = ), 10)), this.getLastPickedDateIndex();
                 if (!this.isEnabled('a') && !this.isEnabled('s') && !this.currentOptions.keepOpen && !this.currentOptions.inline) {
                     this.hide();
                 }
@@ -1055,7 +1227,7 @@ export class TempusDominusCore {
                 }
                 break;
             case 'selectSecond':
-                this.setValue(lastPicked.clone().seconds(parseInt($(e.target).text(), 10)), this.getLastPickedDateIndex());
+                this.setValue(lastPicked.clone().seconds(parseInt($(e.target).innerText = ), 10)), this.getLastPickedDateIndex();
                 if (!this.isEnabled('a') && !this.currentOptions.keepOpen && !this.currentOptions.inline) {
                     this.hide();
                 }
@@ -1343,9 +1515,9 @@ export class TempusDominusCore {
     private keydown(e) {
         let handler = null,
             index,
-            index2,
+            index2: number,
             keyBindKeys,
-            allModifiersPressed;
+            allModifiersPressed: boolean;
         const pressedKeys = [],
             pressedModifiers = {},
             currentKey = e.which,
@@ -1505,7 +1677,7 @@ export class TempusDominusCore {
     }
 
     show() {
-        let currentMoment;
+        let currentMoment: Object;
         const useCurrentGranularity = {
             'year': function (m) {
                 return m.month(0).date(1).hours(0).seconds(0).minutes(0);
@@ -1585,7 +1757,7 @@ export class TempusDominusCore {
     disable() {
         this.hide();
         if (this.component && this.component.classList.contains('btn')) {
-            this.component.addClass('disabled');
+            this.component.classList.add('disabled');
         }
         if (this.input !== undefined) {
             this.input.prop('disabled', true); //todo disable this/comp if input is null
@@ -1594,7 +1766,7 @@ export class TempusDominusCore {
 
     enable() {
         if (this.component && this.component.classList.contains('btn')) {
-            this.component.removeClass('disabled');
+            this.component.classList.remove('disabled');
         }
         if (this.input !== undefined) {
             this.input.prop('disabled', false); //todo enable comp/this if input is null
