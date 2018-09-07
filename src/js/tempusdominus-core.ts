@@ -112,7 +112,7 @@ export class TempusDominusCore {
         this.int();
     }
 
-    private int() {
+    private init() {
         const targetInput = this.htmlElement.getAttribute('data-target-input');
         if (this.htmlElement.tagName === 'INPUT') {
             this.input = (this.htmlElement as HTMLInputElement);
@@ -167,6 +167,7 @@ export class TempusDominusCore {
             element.removeChild(element.firstChild);
         }
     }
+
     private forEach(array, callback, scope?) {
         for (let i = 0; i < array.length; i++) {
             callback.call(scope, i, array[i]);
@@ -625,8 +626,7 @@ export class TempusDominusCore {
     private place(e?) {
         const self = (e && e.data && e.data.picker) || this;
         if (self.options.sideBySide) {
-            self.element
-                .insertAdjacentElement('beforeend', self.widget);
+            self.element.insertAdjacentElement('beforeend', self.widget);
             return;
         }
         if (self.options.widgetParent) {
@@ -644,6 +644,7 @@ export class TempusDominusCore {
             reference = self.element;
         }
 
+// ReSharper disable once WrongExpressionStatement
         new Popper(reference, self.widget[0], {
             placement: 'bottom-start'
         });
@@ -793,7 +794,9 @@ export class TempusDominusCore {
         decadesViewHeader[0].querySelectorAll('span')[0].attr('title', this.currentOptions.tooltips.prevCentury);
         decadesViewHeader[2].querySelectorAll('span')[0].attr('title', this.currentOptions.tooltips.nextCentury);
 
-        decadesView.querySelectorAll('.disabled').classList.remove('disabled')[0];
+        this.forEach(decadesView.querySelectorAll('.disabled'), (x) => {
+            x.classList.remove('disabled');
+        });
 
         if (startDecade.year() === 0 || this.currentOptions.minDate && this.currentOptions.minDate.isAfter(startDecade, 'y')) {
             decadesViewHeader[0].classList.add('disabled');
@@ -820,18 +823,22 @@ export class TempusDominusCore {
         }
         html += `<span data-action="selectDecade" class="decade old" data-selection="${startDecade.year() + 6}">${startDecade.year()}</span>`;
 
-        decadesView.querySelectorAll('td')[0].html(html);
+        decadesView.querySelectorAll('td')[0].innerHTML = html;
     }
 
     private fillDate() {
         const daysView = this.widget.querySelectorAll('.datepicker-days')[0],
             daysViewHeader = daysView.querySelectorAll('th')[0],
-            html = [];
-        let currentDate: moment.Moment, row: HTMLTableRowElement, clsName: string, i: number;
+            daysViewBody = daysView.querySelectorAll('tbody')[0],
+            selectDay = document.createElement('td');
+        let currentDate: moment.Moment, row: HTMLTableRowElement, i: number;
 
         if (!this.hasDate()) {
             return;
         }
+
+        selectDay.dataset.action = 'selectDay';
+        selectDay.classList.add('day');
 
         daysViewHeader[0].querySelectorAll('span')[0].attr('title', this.currentOptions.tooltips.prevMonth);
         daysViewHeader[1].attr('title', this.currentOptions.tooltips.selectMonth);
@@ -852,51 +859,54 @@ export class TempusDominusCore {
 
         currentDate = this.currentViewDate.clone().startOf('M').startOf('w').startOf('d');
 
+        this.empty(daysViewBody);
+
         for (i = 0; i < 42; i++) {
+            const selectDayCopy = (selectDay.cloneNode(true)) as HTMLElement;
+            selectDayCopy.dataset.day = currentDate.format('L');
+            selectDayCopy.innerText = currentDate.date() + '';
+
             //always display 42 days (should show 6 weeks)
             if (currentDate.weekday() === 0) {
                 row = document.createElement('tr');
                 if (this.currentOptions.calendarWeeks) {
-                    row
-                        .insertAdjacentElement('beforeend', `<td class="cw">${currentDate.week()}</td>`);
+                    let td = document.createElement('td');
+                    td.classList.add('cw');
+                    td.innerText = currentDate.week() + '';
+                    row.insertAdjacentElement('beforeend',td);
                 }
-                html.push(row);
+                daysViewBody.insertAdjacentElement('beforeend', row);
             }
-            clsName = '';
             if (currentDate.isBefore(this.currentViewDate, 'M')) {
-                clsName += ' old';
+                selectDay.classList.add('old');
             }
             if (currentDate.isAfter(this.currentViewDate, 'M')) {
-                clsName += ' new';
+                selectDay.classList.add('new');
             }
             if (this.currentOptions.allowMultidate) {
                 var index = this.datesFormatted.indexOf(currentDate.format('YYYY-MM-DD'));
                 if (index !== -1) {
                     if (currentDate.isSame(this.datesFormatted[index], 'd') && !this.unset) {
-                        clsName += ' active';
+                        selectDay.classList.add('active');
                     }
                 }
             } else {
                 if (currentDate.isSame(this.getLastPickedDate(), 'd') && !this.unset) {
-                    clsName += ' active';
+                    selectDay.classList.add('active');
                 }
             }
             if (!this.isValid(currentDate, 'd')) {
-                clsName += ' disabled';
+                selectDay.classList.add('disabled');
             }
             if (currentDate.isSame(this.getMoment(), 'd')) {
-                clsName += ' today';
+                selectDay.classList.add('today');
             }
             if (currentDate.day() === 0 || currentDate.day() === 6) {
-                clsName += ' weekend';
+                selectDay.classList.add('weekend');
             }
-            row
-                .insertAdjacentElement('beforeend', `<td data-action="selectDay" data-day="${currentDate.format('L')}" class="day${clsName}">${currentDate.date()}</td>`);
+            row.insertAdjacentElement('beforeend', selectDayCopy);
             currentDate.add(1, 'd');
         }
-
-        daysView.querySelectorAll('tbody')[0].empty()
-            .insertAdjacentElement('beforeend', html);
 
         this.updateMonths();
 
@@ -908,71 +918,92 @@ export class TempusDominusCore {
     private fillHours() {
         const table = this.widget.querySelectorAll('.timepicker-hours table')[0],
             currentHour = this.currentViewDate.clone().startOf('d'),
-            html = [];
+            selectHour = document.createElement('td');
         let row = document.createElement('tr');
+
+        selectHour.dataset.action = 'selectHour';
+        selectHour.classList.add('hour');
 
         if (this.currentViewDate.hour() > 11 && !this.use24Hours) {
             currentHour.hour(12);
         }
+
+        this.empty(table);
+
         while (currentHour.isSame(this.currentViewDate, 'd') && (this.use24Hours || this.currentViewDate.hour() < 12 && currentHour.hour() < 12 || this.currentViewDate.hour() > 11)) {
+            const selectHourCopy = (selectHour.cloneNode(true)) as HTMLElement;
             if (currentHour.hour() % 4 === 0) {
                 row = document.createElement('tr');
-                html.push(row);
+                table.insertAdjacentElement('beforeend', row);
             }
-            row
-                .insertAdjacentElement('beforeend', `<td data-action="selectHour" class="hour${!this.isValid(currentHour, 'h') ? ' disabled' : ''}">${currentHour.format(this.use24Hours ? 'HH' : 'hh')}</td>`);
+
+            selectHourCopy.classList.add(!this.isValid(currentHour, 'h') ? ' disabled' : '');
+            selectHourCopy.innerText = currentHour.format(this.use24Hours ? 'HH' : 'hh');
+
+            row.insertAdjacentElement('beforeend', selectHourCopy);
             currentHour.add(1, 'h');
         }
-        table.empty()
-            .insertAdjacentElement('beforeend', html);
+       
     }
 
     private fillMinutes() {
         const table = this.widget.querySelectorAll('.timepicker-minutes table')[0],
             currentMinute = this.currentViewDate.clone().startOf('h'),
-            html = [],
-            step = this.currentOptions.stepping === 1 ? 5 : this.currentOptions.stepping;
+            step = this.currentOptions.stepping === 1 ? 5 : this.currentOptions.stepping,
+            selectMinute = document.createElement('td');
         let row = document.createElement('tr');
 
+        selectMinute.dataset.action = 'selectMinute';
+        selectMinute.classList.add('minute');
+
+        this.empty(table);
+
         while (this.currentViewDate.isSame(currentMinute, 'h')) {
+            const selectMinuteCopy = (selectMinute.cloneNode(true)) as HTMLElement;
             if (currentMinute.minute() % (step * 4) === 0) {
                 row = document.createElement('tr');
-                html.push(row);
+                table.insertAdjacentElement('beforeend', row);
             }
-            row
-                .insertAdjacentElement('beforeend', `<td data-action="selectMinute" class="minute${!this.isValid(currentMinute, 'm') ? ' disabled' : ''}">${currentMinute.format('mm')}</td>`);
+
+            selectMinuteCopy.classList.add(!this.isValid(currentMinute, 'm') ? ' disabled' : '');
+            selectMinuteCopy.innerText = currentMinute.format('mm');
+
+            row.insertAdjacentElement('beforeend', selectMinuteCopy);
             currentMinute.add(step, 'm');
         }
-        table.empty()
-            .insertAdjacentElement('beforeend', html);
     }
 
     private fillSeconds() {
         const table = this.widget.querySelectorAll('.timepicker-seconds table')[0],
             currentSecond = this.currentViewDate.clone().startOf('m'),
-            html = [];
+            selectSecond = document.createElement('td');
         let row = document.createElement('tr');
 
+        selectSecond.dataset.action = 'selectMinute';
+        selectSecond.classList.add('minute');
+
+        this.empty(table);
+
         while (this.currentViewDate.isSame(currentSecond, 'm')) {
+            const selectSecondCopy = (selectSecond.cloneNode(true)) as HTMLElement;
             if (currentSecond.second() % 20 === 0) {
                 row = document.createElement('tr');
-                html.push(row);
+                table.insertAdjacentElement('beforeend', row);
             }
-            row
-                .insertAdjacentElement('beforeend', `<td data-action="selectSecond" class="second${!this.isValid(currentSecond, 's') ? ' disabled' : ''}">${currentSecond.format('ss')}</td>`);
+
+            selectSecondCopy.classList.add(!this.isValid(currentSecond, 's') ? ' disabled' : '');
+            selectSecondCopy.innerText = currentSecond.format('ss');
+
+            row.insertAdjacentElement('beforeend', selectSecondCopy);
             currentSecond.add(5, 's');
         }
-
-        table.empty()
-            .insertAdjacentElement('beforeend', html);
     }
 
     private fillTime() {
-        let toggle: Element, newDate: Object;
-        const timeComponents = this.widget.querySelectorAll('.timepicker span[data-time-component]')[0];
+        const timeComponents = this.widget.querySelectorAll('.timepicker span[data-time-component]');
 
         if (!this.use24Hours) {
-            toggle = this.widget.querySelectorAll('.timepicker [data-action=togglePeriod]')[0];
+            const toggle = this.widget.querySelectorAll('.timepicker [data-action=togglePeriod]')[0] as HTMLElement,
             newDate = this.getLastPickedDate().clone().add(this.getLastPickedDate().hours() >= 12 ? -12 : 12, 'h');
 
             toggle.innerText = this.getLastPickedDate().format('A');
