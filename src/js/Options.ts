@@ -2,7 +2,7 @@
 
 export class Options {
     timeZone = '';
-    format = false;
+    format: string | undefined;
     dayViewHeaderFormat = 'MMMM YYYY';
     extraFormats = false;
     stepping = 1;

@@ -1,6 +1,8 @@
 import * as moment from 'moment'
 import Popper from 'popper.js';
 import { Options } from './Options';
+import { unitOfTime } from 'moment';
+import { DatePickerModes } from './DatePickerModes';
 
 export class TempusDominusCore {
     private pluginName = 'datetimepicker';
@@ -26,22 +28,22 @@ export class TempusDominusCore {
         HIDE: `hide${this.eventKey}`,
         SHOW: `show${this.eventKey}`
     };
-    private datePickerModes = [{
-        CLASS_NAME: 'days',
-        NAV_FUNCTION: 'M',
-        NAV_STEP: 1
+    private datePickerModes: DatePickerModes[] = [{
+        className: 'days',
+        duration: 'months',
+        step: 1
     }, {
-        CLASS_NAME: 'months',
-        NAV_FUNCTION: 'y',
-        NAV_STEP: 1
+        className: 'months',
+        duration: 'years',
+        step: 1
     }, {
-        CLASS_NAME: 'years',
-        NAV_FUNCTION: 'y',
-        NAV_STEP: 10
+        className: 'years',
+        duration: 'years',
+        step: 10
     }, {
-        CLASS_NAME: 'decades',
-        NAV_FUNCTION: 'y',
-        NAV_STEP: 100
+        className: 'decades',
+        duration: 'years',
+        step: 100
     }];
     private keyMap = {
         'up': 38,
@@ -90,7 +92,7 @@ export class TempusDominusCore {
     private widget: HTMLElement | null;
     private use24Hours: boolean | null;
     private actualFormat: string;
-    private parseFormats: string;
+    private parseFormats: string[];
     private currentViewMode: number | null;
     private minViewModeNumber: number;
 
@@ -109,7 +111,7 @@ export class TempusDominusCore {
         this.currentViewMode = null;
         this.minViewModeNumber = 0;
 
-        this.int();
+        this.init();
     }
 
     private init() {
@@ -644,7 +646,7 @@ export class TempusDominusCore {
             reference = self.element;
         }
 
-// ReSharper disable once WrongExpressionStatement
+        // ReSharper disable once WrongExpressionStatement
         new Popper(reference, self.widget[0], {
             placement: 'bottom-start'
         });
@@ -677,7 +679,7 @@ export class TempusDominusCore {
     private fillMonths() {
         const spans: HTMLSpanElement[] = [],
             monthsShort = this.currentViewDate.clone().startOf('y').startOf('d'),
-            monthTd =  this.widget.querySelectorAll('.datepicker-months td')[0];
+            monthTd = this.widget.querySelectorAll('.datepicker-months td')[0];
         while (monthsShort.isSame(this.currentViewDate, 'y')) {
             const span = document.createElement('span');
             span.setAttribute('data-action', 'selectMonth');
@@ -701,7 +703,7 @@ export class TempusDominusCore {
         monthsViewHeader[0].querySelectorAll('span')[0].setAttribute('title', this.currentOptions.tooltips.prevYear);
         monthsViewHeader[1].setAttribute('title', this.currentOptions.tooltips.selectYear);
         monthsViewHeader[2].querySelectorAll('span')[0].setAttribute('title', this.currentOptions.tooltips.nextYear);
-        
+
         this.forEach(monthsView.querySelectorAll('.disabled'), (x) => {
             x.classList.remove('disabled');
         });
@@ -709,7 +711,7 @@ export class TempusDominusCore {
         for (let i = 0; i < disabled.length; ++i) {
             disabled[i].classList.remove('disabled');
         }
-        
+
         if (!this.isValid(this.currentViewDate.clone().subtract(1, 'y'), 'y')) {
             monthsViewHeader[0].classList.add('disabled');
         }
@@ -777,7 +779,7 @@ export class TempusDominusCore {
         }
         html += `<span data-action="selectYear" class="year old${!this.isValid(startYear, 'y') ? ' disabled' : ''}">${startYear.year()}</span>`;
 
-        yearsView.querySelectorAll('td')[0].innerHTML =html;
+        yearsView.querySelectorAll('td')[0].innerHTML = html;
     }
 
     private updateDecades() {
@@ -873,7 +875,7 @@ export class TempusDominusCore {
                     let td = document.createElement('td');
                     td.classList.add('cw');
                     td.innerText = currentDate.week() + '';
-                    row.insertAdjacentElement('beforeend',td);
+                    row.insertAdjacentElement('beforeend', td);
                 }
                 daysViewBody.insertAdjacentElement('beforeend', row);
             }
@@ -943,7 +945,7 @@ export class TempusDominusCore {
             row.insertAdjacentElement('beforeend', selectHourCopy);
             currentHour.add(1, 'h');
         }
-       
+
     }
 
     private fillMinutes() {
@@ -1000,11 +1002,9 @@ export class TempusDominusCore {
     }
 
     private fillTime() {
-        const timeComponents = this.widget.querySelectorAll('.timepicker span[data-time-component]');
-
         if (!this.use24Hours) {
             const toggle = this.widget.querySelectorAll('.timepicker [data-action=togglePeriod]')[0] as HTMLElement,
-            newDate = this.getLastPickedDate().clone().add(this.getLastPickedDate().hours() >= 12 ? -12 : 12, 'h');
+                newDate = this.getLastPickedDate().clone().add(this.getLastPickedDate().hours() >= 12 ? -12 : 12, 'h');
 
             toggle.innerText = this.getLastPickedDate().format('A');
 
@@ -1014,9 +1014,9 @@ export class TempusDominusCore {
                 toggle.classList.add('disabled');
             }
         }
-        timeComponents.filter('[data-time-component=hours]').innerText = this.getLastPickedDate().format(`${this.use24Hours ? 'HH' : 'hh'}`);
-        timeComponents.filter('[data-time-component=minutes]').innerText = this.getLastPickedDate().format('mm');
-        timeComponents.filter('[data-time-component=seconds]').innerText = this.getLastPickedDate().format('ss');
+        (this.widget.querySelectorAll('[data-time-component=hours]')[0] as HTMLElement).innerText = this.getLastPickedDate().format(`${this.use24Hours ? 'HH' : 'hh'}`);
+        (this.widget.querySelectorAll('[data-time-component=minutes]')[0] as HTMLElement).innerText = this.getLastPickedDate().format('mm');
+        (this.widget.querySelectorAll('[data-time-component=seconds]')[0] as HTMLElement).innerText = this.getLastPickedDate().format('ss');
 
         this.fillHours();
         this.fillMinutes();
@@ -1024,26 +1024,27 @@ export class TempusDominusCore {
     }
 
     private doAction(e, action) {
+        debugger;
         let lastPicked = this.getLastPickedDate();
-        if ($(e.currentTarget).is('.disabled')) {
+        if (e.currentTarget.is('.disabled')) {
             return false;
         }
-        action = action || $(e.currentTarget).data('action');
+        action = action || e.currentTarget.data('action');
         switch (action) {
             case 'next':
                 {
-                    const navFnc = this.datePickerModes[this.currentViewMode].NAV_FUNCTION;
-                    this.currentViewDate.add(this.datePickerModes[this.currentViewMode].NAV_STEP, navFnc);
+                    const datePickerMode = this.datePickerModes[this.currentViewMode];
+                    this.currentViewDate.add(datePickerMode.step, datePickerMode.duration);
                     this.fillDate();
-                    this.viewUpdate(navFnc);
+                    this.viewUpdate(datePickerMode.duration);
                     break;
                 }
             case 'previous':
                 {
-                    const navFnc = this.datePickerModes[this.currentViewMode].NAV_FUNCTION;
-                    this.currentViewDate.subtract(this.datePickerModes[this.currentViewMode].NAV_STEP, navFnc);
+                    const datePickerMode = this.datePickerModes[this.currentViewMode];
+                    this.currentViewDate.subtract(datePickerMode.step, datePickerMode.duration);
                     this.fillDate();
-                    this.viewUpdate(navFnc);
+                    this.viewUpdate(datePickerMode.duration);
                     break;
                 }
             case 'pickerSwitch':
@@ -1051,7 +1052,7 @@ export class TempusDominusCore {
                 break;
             case 'selectMonth':
                 {
-                    const month = $(e.target).closest('tbody').querySelectorAll('span')[0].index($(e.target));
+                    const month = e.target.closest('tbody').querySelectorAll('span')[0].index(e.target);
                     this.currentViewDate.month(month);
                     if (this.currentViewMode === this.minViewModeNumber) {
                         this.setValue(lastPicked.clone().year(this.currentViewDate.year()).month(this.currentViewDate.month()), this.getLastPickedDateIndex());
@@ -1062,12 +1063,12 @@ export class TempusDominusCore {
                         this.showMode(-1);
                         this.fillDate();
                     }
-                    this.viewUpdate('M');
+                    this.viewUpdate('months');
                     break;
                 }
             case 'selectYear':
                 {
-                    const year = parseInt($(e.target).text(), 10) || 0;
+                    const year = parseInt(e.target.text(), 10) || 0;
                     this.currentViewDate.year(year);
                     if (this.currentViewMode === this.minViewModeNumber) {
                         this.setValue(lastPicked.clone().year(this.currentViewDate.year()), this.getLastPickedDateIndex());
@@ -1078,12 +1079,12 @@ export class TempusDominusCore {
                         this.showMode(-1);
                         this.fillDate();
                     }
-                    this.viewUpdate('YYYY');
+                    this.viewUpdate('years');
                     break;
                 }
             case 'selectDecade':
                 {
-                    const year = parseInt($(e.target).data('selection'), 10) || 0;
+                    const year = parseInt(e.target.data('selection'), 10) || 0;
                     this.currentViewDate.year(year);
                     if (this.currentViewMode === this.minViewModeNumber) {
                         this.setValue(lastPicked.clone().year(this.currentViewDate.year()), this.getLastPickedDateIndex());
@@ -1094,24 +1095,24 @@ export class TempusDominusCore {
                         this.showMode(-1);
                         this.fillDate();
                     }
-                    this.viewUpdate('YYYY');
+                    this.viewUpdate('years');
                     break;
                 }
             case 'selectDay':
                 {
                     const day = this.currentViewDate.clone();
-                    if ($(e.target).is('.old')) {
+                    if (e.target.is('.old')) {
                         day.subtract(1, 'M');
                     }
-                    if ($(e.target).is('.new')) {
+                    if (e.target.is('.new')) {
                         day.add(1, 'M');
                     }
 
-                    var selectDate = day.date(parseInt($(e.target).text(), 10)), index: number;
+                    var selectDate = day.date(parseInt(e.target.text(), 10)), index: number;
                     if (this.currentOptions.allowMultidate) {
                         index = this.datesFormatted.indexOf(selectDate.format('YYYY-MM-DD'));
                         if (index !== -1) {
-                            this.setValue(null, index); //deselect multidate
+                            this.setValue(null, index); //deselect multi-date
                         } else {
                             this.setValue(selectDate, this.getLastPickedDateIndex() + 1);
                         }
@@ -1179,7 +1180,7 @@ export class TempusDominusCore {
                 }
             case 'togglePicker':
                 {
-                    const $this = $(e.target),
+                    const $this = e.target,
                         $link = $this.closest('a'),
                         $parent = $this.closest('ul'),
                         expanded = $parent.querySelectorAll('.show')[0],
@@ -1212,24 +1213,24 @@ export class TempusDominusCore {
                 }
                 break;
             case 'showPicker':
-                this.widget.querySelectorAll('.timepicker > div:not(.timepicker-picker)')[0].hide();
-                this.widget.querySelectorAll('.timepicker .timepicker-picker')[0].show();
+                (this.widget.querySelectorAll('.timepicker > div:not(.timepicker-picker))')[0] as HTMLElement).style.display = 'none';
+                (this.widget.querySelectorAll('.timepicker .timepicker-picker)')[0] as HTMLElement).style.display = 'block';
                 break;
             case 'showHours':
-                this.widget.querySelectorAll('.timepicker .timepicker-picker')[0].hide();
-                this.widget.querySelectorAll('.timepicker .timepicker-hours')[0].show();
+                (this.widget.querySelectorAll('.timepicker .timepicker-picker)')[0] as HTMLElement).style.display = 'none';
+                (this.widget.querySelectorAll('.timepicker .timepicker-hours)')[0] as HTMLElement).style.display = 'block';
                 break;
             case 'showMinutes':
-                this.widget.querySelectorAll('.timepicker .timepicker-picker')[0].hide();
-                this.widget.querySelectorAll('.timepicker .timepicker-minutes')[0].show();
+                (this.widget.querySelectorAll('.timepicker .timepicker-picker)')[0] as HTMLElement).style.display = 'none';
+                (this.widget.querySelectorAll('.timepicker .timepicker-minutes)')[0] as HTMLElement).style.display = 'block';
                 break;
             case 'showSeconds':
-                this.widget.querySelectorAll('.timepicker .timepicker-picker')[0].hide();
-                this.widget.querySelectorAll('.timepicker .timepicker-seconds')[0].show();
+                (this.widget.querySelectorAll('.timepicker .timepicker-picker)')[0] as HTMLElement).style.display = 'none';
+                (this.widget.querySelectorAll('.timepicker .timepicker-seconds)')[0] as HTMLElement).style.display = 'block';
                 break;
             case 'selectHour':
                 {
-                    let hour = parseInt($(e.target).innerText = ), 10;
+                    let hour = parseInt(e.target.innerText, 10);
 
                     if (!this.use24Hours) {
                         if (lastPicked.hours() >= 12) {
@@ -1252,7 +1253,7 @@ export class TempusDominusCore {
                     break;
                 }
             case 'selectMinute':
-                this.setValue(lastPicked.clone().minutes(parseInt($(e.target).innerText = ), 10)), this.getLastPickedDateIndex();
+                this.setValue(lastPicked.clone().minutes(parseInt(e.target.innerText, 10)), this.getLastPickedDateIndex());
                 if (!this.isEnabled('a') && !this.isEnabled('s') && !this.currentOptions.keepOpen && !this.currentOptions.inline) {
                     this.hide();
                 }
@@ -1261,7 +1262,7 @@ export class TempusDominusCore {
                 }
                 break;
             case 'selectSecond':
-                this.setValue(lastPicked.clone().seconds(parseInt($(e.target).innerText = ), 10)), this.getLastPickedDateIndex();
+                this.setValue(lastPicked.clone().seconds(parseInt(e.target.innerText, 10)), this.getLastPickedDateIndex());
                 if (!this.isEnabled('a') && !this.currentOptions.keepOpen && !this.currentOptions.inline) {
                     this.hide();
                 }
@@ -1295,9 +1296,9 @@ export class TempusDominusCore {
         this.fillTime();
     }
 
-    private setValue(targetMoment, index) {
+    private setValue(targetMoment, index = 0) {
         const oldDate = this.unset ? null : this.dates[index];
-        let outpValue = '';
+        let outputValue = '';
         // case of calling setValue(null or false)
         if (!targetMoment) {
             if (!this.currentOptions.allowMultidate || this.dates.length === 1) {
@@ -1305,16 +1306,16 @@ export class TempusDominusCore {
                 this.dates = [];
                 this.datesFormatted = [];
             } else {
-                outpValue = `${this.htmlElement.getAttribute('data-date')},`;
-                outpValue = outpValue.replace(`${oldDate.format(this.actualFormat)},`, '').replace(',,', '').replace(/,\s*$/, '');
+                outputValue = `${this.htmlElement.getAttribute('data-date')},`;
+                outputValue = outputValue.replace(`${oldDate.format(this.actualFormat)},`, '').replace(',,', '').replace(/,\s*$/, '');
                 this.dates.splice(index, 1);
                 this.datesFormatted.splice(index, 1);
             }
             if (this.input !== undefined) {
-                this.input.val(outpValue);
-                this.input.trigger('input');
+                this.input.value = outputValue;
+                this.input.dispatchEvent(inputEvent);
             }
-            this.htmlElement.data('date', outpValue);
+            this.htmlElement.dataset.date = outputValue;
             this.notifyEvent({
                 type: this.event.CHANGE,
                 date: false,
@@ -1340,17 +1341,17 @@ export class TempusDominusCore {
             this.currentViewDate = targetMoment.clone();
             if (this.currentOptions.allowMultidate && this.dates.length > 1) {
                 for (let i = 0; i < this.dates.length; i++) {
-                    outpValue += `${this.dates[i].format(this.actualFormat)}${this.currentOptions.multidateSeparator}`;
+                    outputValue += `${this.dates[i].format(this.actualFormat)}${this.currentOptions.multidateSeparator}`;
                 }
-                outpValue = outpValue.replace(/,\s*$/, '');
+                outputValue = outputValue.replace(/,\s*$/, '');
             } else {
-                outpValue = this.dates[index].format(this.actualFormat);
+                outputValue = this.dates[index].format(this.actualFormat);
             }
             if (this.input !== undefined) {
-                this.input.val(outpValue);
-                this.input.trigger('input');
+                this.input.value = outputValue;
+                this.input.dispatchEvent(inputEvent);
             }
-            this.htmlElement.data('date', outpValue);
+            this.htmlElement.dataset.date = outputValue;
 
             this.unset = false;
             this.update();
@@ -1362,8 +1363,8 @@ export class TempusDominusCore {
         } else {
             if (!this.currentOptions.keepInvalid) {
                 if (this.input !== undefined) {
-                    this.input.val(`${this.unset ? '' : this.dates[index].format(this.actualFormat)}`);
-                    this.input.trigger('input');
+                    this.input.value = `${this.unset ? '' : this.dates[index].format(this.actualFormat)}`;
+                    this.input.dispatchEvent(inputEvent);
                 }
             } else {
                 this.notifyEvent({
@@ -1381,7 +1382,8 @@ export class TempusDominusCore {
     }
 
     private change(e) {
-        const val = $(e.target).val().trim(),
+        debugger;
+        const val = e.target.val().trim(),
             parsedDate = val ? this.parseInputDate(val) : null;
         this.setValue(parsedDate);
         e.stopImmediatePropagation();
@@ -1394,7 +1396,7 @@ export class TempusDominusCore {
     }
 
     private hasTimeZone() {
-        return moment.tz !== undefined && this.currentOptions.timeZone !== undefined && this.currentOptions.timeZone !== null && this.currentOptions.timeZone !== '';
+        return (window as any).moment.tz !== undefined && this.currentOptions.timeZone !== undefined && this.currentOptions.timeZone !== null && this.currentOptions.timeZone !== '';
     }
 
     private isEnabled(granularity) {
@@ -1454,13 +1456,13 @@ export class TempusDominusCore {
         if ((e.type === this.event.CHANGE && e.date && e.date.isSame(e.oldDate)) || !e.date && !e.oldDate) {
             return;
         }
-        this.htmlElement.trigger(e);
+        this.htmlElement.dispatchEvent(e);
     }
 
-    private viewUpdate(e) {
-        if (e === 'y') {
-            e = 'YYYY';
-        }
+    private viewUpdate(e: unitOfTime.DurationConstructor) {
+        //if (e === 'y') {
+        //    e = 'YYYY';
+        //}
         this.notifyEvent({
             type: this.event.UPDATE,
             change: e,
@@ -1475,7 +1477,7 @@ export class TempusDominusCore {
         if (dir) {
             this.currentViewMode = Math.max(this.minViewModeNumber, Math.min(3, this.currentViewMode + dir));
         }
-        this.widget.querySelectorAll('.datepicker > div')[0].hide().filter(`.datepicker-${this.datePickerModes[this.currentViewMode].CLASS_NAME}`).show();
+        (this.widget.querySelectorAll('.datepicker > div)')[0] as HTMLElement).style.display = 'none'.filter(`.datepicker-${this.datePickerModes[this.currentViewMode].className}`).show();
     }
 
     private isInDisabledDates(testDate) {
@@ -1494,7 +1496,7 @@ export class TempusDominusCore {
         return this.currentOptions.enabledHours[testDate.format('H')] === true;
     }
 
-    private isValid(targetMoment, granularity) {
+    private isValid(targetMoment, granularity?) {
         if (!targetMoment.isValid()) {
             return false;
         }
@@ -1609,10 +1611,9 @@ export class TempusDominusCore {
         // Store given enabledDates and disabledDates as keys.
         // This way we can check their existence in O(1) time instead of looping through whole array.
         // (for example: options.enabledDates['2014-02-27'] === true)
-        const givenDatesIndexed = {},
-            self = this;
-        $.each(givenDatesArray, function () {
-            const dDate = self.parseInputDate(this);
+        const givenDatesIndexed = {};
+        this.forEach(givenDatesArray, (index, value) => {
+            const dDate = this.parseInputDate(value);
             if (dDate.isValid()) {
                 givenDatesIndexed[dDate.format('YYYY-MM-DD')] = true;
             }
@@ -1675,7 +1676,7 @@ export class TempusDominusCore {
             return;
         }
         // Ignore event if in the middle of a picker transition
-        this.widget.querySelectorAll('.collapse')[0].each(function () {
+        this.forEach(this.widget.querySelectorAll('.collapse')[0], function () {
             const collapseData = $(this).data('collapse');
             if (collapseData && collapseData.transitioning) {
                 transitioning = true;
@@ -1756,9 +1757,9 @@ export class TempusDominusCore {
         this.fillDow();
         this.fillMonths();
 
-        this.widget.querySelectorAll('.timepicker-hours')[0].hide();
-        this.widget.querySelectorAll('.timepicker-minutes')[0].hide();
-        this.widget.querySelectorAll('.timepicker-seconds')[0].hide();
+        (this.widget.querySelectorAll('.timepicker-hours)')[0] as HTMLElement).style.display = 'none';
+        (this.widget.querySelectorAll('.timepicker-minutes)')[0] as HTMLElement).style.display = 'none';
+        (this.widget.querySelectorAll('.timepicker-seconds)')[0] as HTMLElement).style.display = 'none';
 
         this.update();
         this.showMode();
