@@ -137,7 +137,7 @@ export class TempusDominusCore {
         this.initFormatting();
 
         if (this.input !== undefined && this.input.tagName === 'INPUT' && this.input.value.trim().length !== 0) {
-            this.setValue(this.parseInputDate(this.input.value.trim()), 0);
+            this.setValue(this.internalParseInputDate(this.input.value.trim()), 0);
         } else if (this.currentOptions.defaultDate && this.input !== undefined && this.input.getAttribute('placeholder') === undefined) {
             this.setValue(this.currentOptions.defaultDate, 0);
         }
@@ -1384,7 +1384,7 @@ export class TempusDominusCore {
     private change(e) {
         debugger;
         const val = e.target.val().trim(),
-            parsedDate = val ? this.parseInputDate(val) : null;
+            parsedDate = val ? this.internalParseInputDate(val) : null;
         this.setValue(parsedDate);
         e.stopImmediatePropagation();
         return false;
@@ -1536,7 +1536,7 @@ export class TempusDominusCore {
         return true;
     }
 
-    private parseInputDate(inputDate) {
+    private internalParseInputDate(inputDate: string | moment.Moment | Date) {
         if (this.currentOptions.parseInputDate === undefined) {
             if (!moment.isMoment(inputDate)) {
                 inputDate = this.getMoment(inputDate);
@@ -1613,7 +1613,7 @@ export class TempusDominusCore {
         // (for example: options.enabledDates['2014-02-27'] === true)
         const givenDatesIndexed = {};
         this.forEach(givenDatesArray, (index, value) => {
-            const dDate = this.parseInputDate(value);
+            const dDate = this.internalParseInputDate(value);
             if (dDate.isValid()) {
                 givenDatesIndexed[dDate.format('YYYY-MM-DD')] = true;
             }
@@ -1736,7 +1736,7 @@ export class TempusDominusCore {
                 return;
             }
             if (this.input.val() !== undefined && this.input.val().trim().length !== 0) {
-                this.setValue(this.parseInputDate(this.input.val().trim()), 0);
+                this.setValue(this.internalParseInputDate(this.input.val().trim()), 0);
             } else if (this.unset && this.currentOptions.useCurrent) {
                 currentMoment = this.getMoment();
                 if (typeof this.currentOptions.useCurrent === 'string') {
@@ -1930,7 +1930,7 @@ export class TempusDominusCore {
             throw new TypeError('date() parameter must be one of [null, string, moment or Date]');
         }
 
-        this.setValue(newDate === null ? null : this.parseInputDate(newDate), index);
+        this.setValue(newDate === null ? null : this.internalParseInputDate(newDate), index);
     }
 
     format(newFormat) {
@@ -2080,7 +2080,7 @@ export class TempusDominusCore {
             }
         }
 
-        const parsedDate = this.parseInputDate(maxDate);
+        const parsedDate = this.internalParseInputDate(maxDate);
 
         if (!parsedDate.isValid()) {
             throw new TypeError(`maxDate() Could not parse date parameter: ${maxDate}`);
@@ -2117,7 +2117,7 @@ export class TempusDominusCore {
             }
         }
 
-        const parsedDate = this.parseInputDate(minDate);
+        const parsedDate = this.internalParseInputDate(minDate);
 
         if (!parsedDate.isValid()) {
             throw new TypeError(`minDate() Could not parse date parameter: ${minDate}`);
@@ -2154,7 +2154,7 @@ export class TempusDominusCore {
             }
         }
 
-        const parsedDate = this.parseInputDate(defaultDate);
+        const parsedDate = this.internalParseInputDate(defaultDate);
         if (!parsedDate.isValid()) {
             throw new TypeError(`defaultDate() Could not parse date parameter: ${defaultDate}`);
         }
@@ -2447,7 +2447,7 @@ export class TempusDominusCore {
         this.currentOptions.datepickerInput = datepickerInput;
     }
 
-    parseInputDate(parseInputDate) {
+    parseInputDate(parseInputDate: Function) {
         if (arguments.length === 0) {
             return this.currentOptions.parseInputDate;
         }
@@ -2552,7 +2552,7 @@ export class TempusDominusCore {
             throw new TypeError('viewDate() parameter must be one of [string, moment or Date]');
         }
 
-        this.currentViewDate = this.parseInputDate(newDate);
+        this.currentViewDate = this.internalParseInputDate(newDate);
         this.viewUpdate();
     }
 

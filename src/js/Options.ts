@@ -39,6 +39,7 @@ export class Options {
     viewDate = false;
     allowMultidate = false;
     multidateSeparator = ',';
+    parseInputDate: Function;
 }
 
 export class Icons {
