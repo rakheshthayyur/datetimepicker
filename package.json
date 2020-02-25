@@ -7,17 +7,15 @@
     "url": "https://github.com/tempusdominus/bootstrap-4/issues"
   },
   "dependencies": {
-    "jquery": "^3.0",
-    "moment": "^2.22.2",
-    "moment-timezone": "^0.5.11",
-    "popper.js": "^1.12.9"
+    "moment": "^2.24.0",
+    "moment-timezone": "^0.5.27",
+    "popper.js": "^1.16.0"
   },
   "peerDependencies": {
-    "jquery": "^3.0",
-    "moment": "^2.17",
-    "moment-timezone": "^0.5.11",
-    "popper.js": "^1.12.9",
-    "tempusdominus-core": "5.0.0"
+    "moment": "^2.24.0",
+    "moment-timezone": "^0.5.27",
+    "popper.js": "^1.16.0",
+    "tempusdominus-core": "5.0.3"
   },
   "description": "A date/time picker component designed to work with Momentjs. For usage, installation and demos see Project Site on GitHub",
   "devDependencies": {
@@ -37,7 +35,8 @@
     "load-grunt-tasks": "latest",
     "node-sass": "^4.9.1",
     "tempusdominus-core": "^5.0.0",
-    "uglify-js": "^2.7.5"
+    "uglify-js": "^2.7.5",
+    "typescript": "3.5.3"
   },
   "homepage": "https://tempusdominus.github.io/datetimepicker",
   "keywords": [

@@ -2,29 +2,29 @@
 
 export class Options {
     timeZone = '';
-    format: string | undefined;
+    format: string;
     dayViewHeaderFormat = 'MMMM YYYY';
-    extraFormats = false;
+    extraFormats: string[] = [];
     stepping = 1;
     minDate: moment.Moment | null = null;
     maxDate: moment.Moment | null = null;
-    useCurrent = true;
+    useCurrent: 'year' | 'month' | 'day' | 'hour' | 'minute';
     collapse = true;
     locale = moment().locale();
-    defaultDate = false;
-    disabledDates = false;
-    enabledDates = false;
+    defaultDate: moment.Moment;
+    disabledDates: moment.Moment[] = [];
+    enabledDates: moment.Moment[] = [];
     icons = new Icons();
     tooltips = new Tooltips();
     useStrict = false;
     sideBySide = false;
-    daysOfWeekDisabled = false;
+    daysOfWeekDisabled: number[] = [];
     calendarWeeks = false;
-    viewMode = 'days';
-    toolbarPlacement = 'default';
+    viewMode: 'times' | 'days' | 'months' | 'years' | 'decades';
+    toolbarPlacement: 'default' | 'top' | 'bottom' = 'default';
     buttons = new Buttons();
     widgetPositioning = 'auto';
-    widgetParent = null;
+    widgetParent: '' = null;
     ignoreReadonly = false;
     keepOpen = false;
     focusOnShow = true;
@@ -33,10 +33,10 @@ export class Options {
     keyBinds = ''; //todo
     debug = false;
     allowInputToggle = false;
-    disabledTimeIntervals = false;
-    disabledHours = false;
-    enabledHours = false;
-    viewDate = false;
+    disabledTimeIntervals: moment.Moment[][];
+    disabledHours: number[] = [];
+    enabledHours: number[] = [];
+    viewDate: moment.Moment;
     allowMultidate = false;
     multidateSeparator = ',';
     parseInputDate: Function;

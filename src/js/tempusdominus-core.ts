@@ -1,8 +1,11 @@
 import * as moment from 'moment'
 import Popper from 'popper.js';
-import { Options } from './Options';
+import { Options, Buttons } from './Options';
 import { unitOfTime } from 'moment';
 import { DatePickerModes } from './DatePickerModes';
+import { Icons } from './Options';
+import { Tooltips } from './Options';
+import '../../../../../../Program Files (x86)/Microsoft SDKs/TypeScript/3.8/lib.dom'; //todo resharper whines about this, need to remove
 
 export class TempusDominusCore {
     private pluginName = 'datetimepicker';
@@ -75,7 +78,6 @@ export class TempusDominusCore {
         'delete': 46,
         46: 'delete'
     };
-    private viewModes = ['times', 'days', 'months', 'years', 'decades'];
     private keyState = {};
     private keyPressHandled = {};
 
@@ -132,7 +134,7 @@ export class TempusDominusCore {
 
         this.currentOptions = { ...this.currentOptions, ...this.dataToOptions() };
 
-        this.options(this.currentOptions);
+        this.options = this.currentOptions;
 
         this.initFormatting();
 
@@ -175,6 +177,67 @@ export class TempusDominusCore {
             callback.call(scope, i, array[i]);
         }
     }
+
+    private deepMerge(target, source) {
+        function isPlainObject(obj: any) {
+            if (toString.call(obj) === '[object Object]') {
+                const proto = Object.getPrototypeOf(obj);
+
+                // Objects foolish enough to have prototypes with their own - hasOwnProperty - method are not supported
+                return !proto || !proto.hasOwnProperty || proto.hasOwnProperty('hasOwnProperty');
+            }
+
+            return false;
+        }
+
+        let sourceProperty, targetProperty, clonedTargetProperty;
+        // Only deal with non-null/undefined values
+        // NOTE: How was the previous source != null getting away with loose comparison?
+        // In any event, it is obfuscating to do loose comparison to null
+        if (source !== null && source !== undefined) {
+
+            // Extend the base object
+            let name;
+            for (name in source) {
+                if (Object.prototype.hasOwnProperty.call(source, name)) {
+                    targetProperty = target[name];
+                    sourceProperty = source[name];
+
+                    // Prevent infinite loop
+                    if (target !== sourceProperty) {
+                        if (deep && sourceProperty) {
+                            clonedTargetProperty = null;
+
+                            if (Array.isArray(sourceProperty)) {
+                                clonedTargetProperty = targetProperty &&
+                                    Array.isArray(targetProperty)
+                                    ? targetProperty
+                                    : [];
+                            } else if (isPlainObject(sourceProperty)) {
+                                clonedTargetProperty = targetProperty &&
+                                    isPlainObject(targetProperty)
+                                    ? targetProperty
+                                    : {};
+                            }
+
+                            target[name] = clonedTargetProperty
+                                ? extend(true, clonedTargetProperty, sourceProperty)
+                                : sourceProperty;
+
+                            // Don't bring in undefined values
+                        } else if (sourceProperty !== undefined) {
+                            target[name] = sourceProperty;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Return the modified object
+        return target;
+    }
+
+
 
     private getDatePickerTemplate(): HTMLElement[] {
         const table = document.createElement('table'),
@@ -1180,12 +1243,12 @@ export class TempusDominusCore {
                 }
             case 'togglePicker':
                 {
-                    const $this = e.target,
-                        $link = $this.closest('a'),
-                        $parent = $this.closest('ul'),
-                        expanded = $parent.querySelectorAll('.show')[0],
-                        closed = $parent.querySelectorAll('.collapse:not(.show)')[0],
-                        $span = $this.is('span') ? $this : $this.querySelectorAll('span')[0];
+                    const target = e.target,
+                        link = target.closest('a'),
+                        parent = target.closest('ul'),
+                        expanded = parent.querySelectorAll('.show')[0],
+                        closed = parent.querySelectorAll('.collapse:not(.show)')[0],
+                        span = target.is('span') ? target : target.querySelectorAll('span')[0];
                     let collapseData;
 
                     if (expanded && expanded.length) {
@@ -1202,12 +1265,12 @@ export class TempusDominusCore {
                             expanded.classList.remove('show');
                             closed.classList.add('show');
                         }
-                        $span.toggleClass(this.currentOptions.icons.time + ' ' + this.currentOptions.icons.date);
+                        span.toggleClass(this.currentOptions.icons.time + ' ' + this.currentOptions.icons.date);
 
-                        if ($span.classList.contains(this.currentOptions.icons.date)) {
-                            $link.attr('title', this.currentOptions.tooltips.selectDate);
+                        if (span.classList.contains(this.currentOptions.icons.date)) {
+                            link.attr('title', this.currentOptions.tooltips.selectDate);
                         } else {
-                            $link.attr('title', this.currentOptions.tooltips.selectTime);
+                            link.attr('title', this.currentOptions.tooltips.selectTime);
                         }
                     }
                 }
@@ -1433,22 +1496,30 @@ export class TempusDominusCore {
         return this.isEnabled('y') || this.isEnabled('M') || this.isEnabled('d');
     }
 
-    private dataToOptions(): Options {
-        const eData = this.htmlElement.data();
-        let dataOptions = {};
+    private dataToOptions(): Options { //todo test this
+        const elementData = this.htmlElement.dataset;
+        let dataOptions = new Options();
+        const cleanedElementData = {};
 
-        if (eData.dateOptions && eData.dateOptions instanceof Object) {
-            dataOptions = $.extend(true, dataOptions, eData.dateOptions);
-        }
+        Object.keys(elementData).forEach(key => {
+            if (!key.startsWith('datepicker')) return;
+            var newKey = key.replace('datepicker', ''); //data-datepicker-format = datepickerFormat -> Format
+            newKey = newKey.charAt(0).toLowerCase() + newKey.slice(1); //Format -> format
+            cleanedElementData[newKey] = elementData[key];
+        });
 
-        $.each(this.currentOptions, function (key) {
-            const attributeName = `date${key.charAt(0).toUpperCase()}${key.slice(1)}`; //todo data api key
-            if (eData[attributeName] !== undefined) {
-                dataOptions[key] = eData[attributeName];
+        Object.keys(dataOptions).forEach(key => {
+            if (cleanedElementData[key] !== undefined) {
+                dataOptions[key] = cleanedElementData[key];
             } else {
                 delete dataOptions[key];
             }
         });
+
+        if (eData.dateOptions && eData.dateOptions instanceof Object) {
+            dataOptions = this.deepMerge(this.currentOptions, dataOptions);
+        }
+
         return dataOptions;
     }
 
@@ -1459,7 +1530,7 @@ export class TempusDominusCore {
         this.htmlElement.dispatchEvent(e);
     }
 
-    private viewUpdate(e: unitOfTime.DurationConstructor) {
+    private viewUpdate(e: unitOfTime.DurationConstructor = undefined) {
         //if (e === 'y') {
         //    e = 'YYYY';
         //}
@@ -1470,12 +1541,12 @@ export class TempusDominusCore {
         });
     }
 
-    private showMode(dir) {
+    private showMode(direction: number = 0) {
         if (!this.widget) {
             return;
         }
-        if (dir) {
-            this.currentViewMode = Math.max(this.minViewModeNumber, Math.min(3, this.currentViewMode + dir));
+        if (direction) {
+            this.currentViewMode = Math.max(this.minViewModeNumber, Math.min(3, this.currentViewMode + direction));
         }
         (this.widget.querySelectorAll('.datepicker > div)')[0] as HTMLElement).style.display = 'none'.filter(`.datepicker-${this.datePickerModes[this.currentViewMode].className}`).show();
     }
@@ -1523,8 +1594,8 @@ export class TempusDominusCore {
         }
         if (this.currentOptions.disabledTimeIntervals && (granularity === 'h' || granularity === 'm' || granularity === 's')) {
             let found = false;
-            $.each(this.currentOptions.disabledTimeIntervals, function () {
-                if (targetMoment.isBetween(this[0], this[1])) {
+            this.currentOptions.disabledTimeIntervals.forEach(x => {
+                if (targetMoment.isBetween(x[0], x[1])) {
                     found = true;
                     return false;
                 }
@@ -1536,7 +1607,7 @@ export class TempusDominusCore {
         return true;
     }
 
-    private internalParseInputDate(inputDate: string | moment.Moment | Date) {
+    private internalParseInputDate(inputDate: moment.Moment) {
         if (this.currentOptions.parseInputDate === undefined) {
             if (!moment.isMoment(inputDate)) {
                 inputDate = this.getMoment(inputDate);
@@ -1549,52 +1620,52 @@ export class TempusDominusCore {
     }
 
     private keydown(e) {
-        let handler = null,
-            index,
-            index2: number,
-            keyBindKeys,
-            allModifiersPressed: boolean;
-        const pressedKeys = [],
-            pressedModifiers = {},
-            currentKey = e.which,
-            pressed = 'p';
+        //let handler = null, //todo
+        //    index,
+        //    index2: number,
+        //    keyBindKeys,
+        //    allModifiersPressed: boolean;
+        //const pressedKeys = [],
+        //    pressedModifiers = {},
+        //    currentKey = e.which,
+        //    pressed = 'p';
 
-        this.keyState[currentKey] = pressed;
+        //this.keyState[currentKey] = pressed;
 
-        for (index in this.keyState) {
-            if (this.keyState.hasOwnProperty(index) && this.keyState[index] === pressed) {
-                pressedKeys.push(index);
-                if (parseInt(index, 10) !== currentKey) {
-                    pressedModifiers[index] = true;
-                }
-            }
-        }
+        //for (index in this.keyState) {
+        //    if (this.keyState.hasOwnProperty(index) && this.keyState[index] === pressed) {
+        //        pressedKeys.push(index);
+        //        if (parseInt(index, 10) !== currentKey) {
+        //            pressedModifiers[index] = true;
+        //        }
+        //    }
+        //}
 
-        for (index in this.currentOptions.keyBinds) {
-            if (this.currentOptions.keyBinds.hasOwnProperty(index) && typeof this.currentOptions.keyBinds[index] === 'function') {
-                keyBindKeys = index.split(' ');
-                if (keyBindKeys.length === pressedKeys.length && this.keyMap[currentKey] === keyBindKeys[keyBindKeys.length - 1]) {
-                    allModifiersPressed = true;
-                    for (index2 = keyBindKeys.length - 2; index2 >= 0; index2--) {
-                        if (!(this.keyMap[keyBindKeys[index2]] in pressedModifiers)) {
-                            allModifiersPressed = false;
-                            break;
-                        }
-                    }
-                    if (allModifiersPressed) {
-                        handler = this.currentOptions.keyBinds[index];
-                        break;
-                    }
-                }
-            }
-        }
+        //for (index in this.currentOptions.keyBinds) {
+        //    if (this.currentOptions.keyBinds.hasOwnProperty(index) && typeof this.currentOptions.keyBinds[index] === 'function') {
+        //        keyBindKeys = index.split(' ');
+        //        if (keyBindKeys.length === pressedKeys.length && this.keyMap[currentKey] === keyBindKeys[keyBindKeys.length - 1]) {
+        //            allModifiersPressed = true;
+        //            for (index2 = keyBindKeys.length - 2; index2 >= 0; index2--) {
+        //                if (!(this.keyMap[keyBindKeys[index2]] in pressedModifiers)) {
+        //                    allModifiersPressed = false;
+        //                    break;
+        //                }
+        //            }
+        //            if (allModifiersPressed) {
+        //                handler = this.currentOptions.keyBinds[index];
+        //                break;
+        //            }
+        //        }
+        //    }
+        //}
 
-        if (handler) {
-            if (handler.call(this)) {
-                e.stopPropagation();
-                e.preventDefault();
-            }
-        }
+        //if (handler) {
+        //    if (handler.call(this)) {
+        //        e.stopPropagation();
+        //        e.preventDefault();
+        //    }
+        //}
     }
 
     //noinspection JSMethodCanBeStatic,SpellCheckingInspection
@@ -1607,35 +1678,35 @@ export class TempusDominusCore {
         }
     }
 
-    private indexGivenDates(givenDatesArray) {
+    private indexGivenDates(givenDatesArray) { //todo
         // Store given enabledDates and disabledDates as keys.
         // This way we can check their existence in O(1) time instead of looping through whole array.
         // (for example: options.enabledDates['2014-02-27'] === true)
-        const givenDatesIndexed = {};
-        this.forEach(givenDatesArray, (index, value) => {
-            const dDate = this.internalParseInputDate(value);
-            if (dDate.isValid()) {
-                givenDatesIndexed[dDate.format('YYYY-MM-DD')] = true;
-            }
-        });
-        return Object.keys(givenDatesIndexed).length ? givenDatesIndexed : false;
+        //const givenDatesIndexed = {};
+        //this.forEach(givenDatesArray, (index, value) => {
+        //    const dDate = this.internalParseInputDate(value);
+        //    if (dDate.isValid()) {
+        //        givenDatesIndexed[dDate.format('YYYY-MM-DD')] = true;
+        //    }
+        //});
+        //return Object.keys(givenDatesIndexed).length ? givenDatesIndexed : false;
     }
 
-    private indexGivenHours(givenHoursArray) {
+    private indexGivenHours(givenHoursArray) { //todo
         // Store given enabledHours and disabledHours as keys.
         // This way we can check their existence in O(1) time instead of looping through whole array.
         // (for example: options.enabledHours['2014-02-27'] === true)
-        const givenHoursIndexed = {};
-        $.each(givenHoursArray, function () {
-            givenHoursIndexed[this] = true;
-        });
-        return Object.keys(givenHoursIndexed).length ? givenHoursIndexed : false;
+        //const givenHoursIndexed = {};
+        //~jquery~.each(givenHoursArray, function () {
+        //    givenHoursIndexed[this] = true;
+        //});
+        //return Object.keys(givenHoursIndexed).length ? givenHoursIndexed : false;
     }
 
     private initFormatting() {
         const format = this.currentOptions.format || 'L LT';
 
-        this.actualFormat = format.replace(/(\[[^\[]*])|(\\)?(LTS|LT|LL?L?L?|l{1,4})/g, formatInput => this.dates[0].localeData().longDateFormat(formatInput) || formatInput);
+        this.actualFormat = format.replace(/(\[[^\[]*])|(\\)?(LTS|LT|LL?L?L?|l{1,4})/g, (formatInput: moment.LongDateFormatKey) => this.dates[0].localeData().longDateFormat(formatInput) || formatInput);
 
         this.parseFormats = this.currentOptions.extraFormats ? this.currentOptions.extraFormats.slice() : [];
         if (this.parseFormats.indexOf(format) < 0 && this.parseFormats.indexOf(this.actualFormat) < 0) {
@@ -1671,30 +1742,30 @@ export class TempusDominusCore {
 
     //public
     hide() {
-        let transitioning = false;
+        //let transitioning = false;
         if (!this.widget) {
             return;
         }
-        // Ignore event if in the middle of a picker transition
-        this.forEach(this.widget.querySelectorAll('.collapse')[0], function () {
-            const collapseData = $(this).data('collapse');
-            if (collapseData && collapseData.transitioning) {
-                transitioning = true;
-                return false;
-            }
-            return true;
-        });
-        if (transitioning) {
-            return;
-        }
+        // todo? Ignore event if in the middle of a picker transition
+        //this.forEach(this.widget.querySelectorAll('.collapse')[0], function () {
+        //    const collapseData = ~jquery~(this).data('collapse');
+        //    if (collapseData && collapseData.transitioning) {
+        //        transitioning = true;
+        //        return false;
+        //    }
+        //    return true;
+        //});
+        //if (transitioning) {
+        //    return;
+        //}
         if (this.component && this.component.classList.contains('btn')) {
-            this.component.toggleClass('active');
+            this.component.classList.toggle('active');
         }
         this.widget.hide();
 
-        $(window).off('resize', this.place());
-        this.widget.off('click', '[data-action]');
-        this.widget.off('mousedown', false);
+        window.removeEventListener('resize', this.place());
+        //todo this.widget.off('click', '[data-action]');
+        this.widget.removeEventListener('mousedown', false);
 
         this.widget.remove();
         this.widget = null;
@@ -1712,7 +1783,7 @@ export class TempusDominusCore {
     }
 
     show() {
-        let currentMoment: Object;
+        let currentMoment: moment.Moment;
         const useCurrentGranularity = {
             'year': function (m) {
                 return m.month(0).date(1).hours(0).seconds(0).minutes(0);
@@ -1739,14 +1810,14 @@ export class TempusDominusCore {
                 this.setValue(this.internalParseInputDate(this.input.val().trim()), 0);
             } else if (this.unset && this.currentOptions.useCurrent) {
                 currentMoment = this.getMoment();
-                if (typeof this.currentOptions.useCurrent === 'string') {
+                if (this.currentOptions.useCurrent) {
                     currentMoment = useCurrentGranularity[this.currentOptions.useCurrent](currentMoment);
                 }
                 this.setValue(currentMoment, 0);
             }
         } else if (this.unset && this.currentOptions.useCurrent) {
             currentMoment = this.getMoment();
-            if (typeof this.currentOptions.useCurrent === 'string') {
+            if (this.currentOptions.useCurrent) {
                 currentMoment = useCurrentGranularity[this.currentOptions.useCurrent](currentMoment);
             }
             this.setValue(currentMoment, 0);
@@ -1764,16 +1835,16 @@ export class TempusDominusCore {
         this.update();
         this.showMode();
 
-        $(window).on('resize', { picker: this }, this.place);
-        this.widget.on('click', '[data-action]', $.proxy(this.doAction, this)); // this handles clicks on the widget
-        this.widget.on('mousedown', false);
+        window.addEventListener('resize', this.place); //todo jquery version had a reference to picker $(window).on('resize', { picker: this }, this.place);
+        this.widget.querySelectorAll('[data-action]').addEventListener('click', this.doAction);//todo .on('click', '[data-action]', ~jquery~.proxy(this.doAction, this)); // this handles clicks on the widget
+        this.widget.addEventListener('mousedown', false);
 
         if (this.component && this.component.classList.contains('btn')) {
-            this.component.toggleClass('active');
+            this.component.classList.toggle('active');
         }
         this.place();
         this.widget.show();
-        if (this.input !== undefined && this.currentOptions.focusOnShow && !this.input.is(':focus')) {
+        if (this.input !== undefined && this.currentOptions.focusOnShow && this.input !== document.activeElement) {
             this.input.focus();
         }
 
@@ -1785,8 +1856,8 @@ export class TempusDominusCore {
     destroy() {
         this.hide();
         //todo doc off?
-        this.element.removeData(TempusDominusCore.DATA_KEY);
-        this.element.removeData('date');
+        delete this.element.dataset.TempusDominusCore.DATA_KEY; //todo this might need to be a loop
+        delete this.element.dataset.date;
     }
 
     disable() {
@@ -1795,7 +1866,7 @@ export class TempusDominusCore {
             this.component.classList.add('disabled');
         }
         if (this.input !== undefined) {
-            this.input.prop('disabled', true); //todo disable this/comp if input is null
+            this.input.disabled = true; //todo disable this/comp if input is null
         }
     }
 
@@ -1804,21 +1875,15 @@ export class TempusDominusCore {
             this.component.classList.remove('disabled');
         }
         if (this.input !== undefined) {
-            this.input.prop('disabled', false); //todo enable comp/this if input is null
+            this.input.disabled = false; //todo enable comp/this if input is null
         }
     }
 
-    toolbarPlacement(toolbarPlacement) {
-        if (arguments.length === 0) {
-            return this.currentOptions.toolbarPlacement;
-        }
+    get toolbarPlacement() {
+        return this.currentOptions.toolbarPlacement;
+    }
 
-        if (typeof toolbarPlacement !== 'string') {
-            throw new TypeError('toolbarPlacement() expects a string parameter');
-        }
-        if (toolbarPlacements.indexOf(toolbarPlacement) === -1) {
-            throw new TypeError(`toolbarPlacement() parameter must be one of (${toolbarPlacements.join(', ')}) value`);
-        }
+    set toolbarPlacement(toolbarPlacement: 'default' | 'top' | 'bottom') {
         this.currentOptions.toolbarPlacement = toolbarPlacement;
 
         if (this.widget) {
@@ -1827,33 +1892,20 @@ export class TempusDominusCore {
         }
     }
 
-    widgetPositioning(widgetPositioning) {
-        if (arguments.length === 0) {
-            return this.currentOptions.widgetPositioning;
-        }
+    get widgetPositioning() {
+        return this.currentOptions.widgetPositioning;
+    }
 
-        if (typeof widgetPositioning !== 'string') {
-            throw new TypeError('widgetPositioning() expects a string parameter');
-        }
-
+    set widgetPositioning(widgetPositioning: string) {
         this.currentOptions.widgetPositioning = widgetPositioning;
-
         this.update();
     }
 
-    widgetParent(widgetParent) {
-        if (arguments.length === 0) {
-            return this.currentOptions.widgetParent;
-        }
+    get widgetParent() {
+        return this.currentOptions.widgetParent;
+    }
 
-        if (typeof widgetParent === 'string') {
-            widgetParent = $(widgetParent);
-        }
-
-        if (widgetParent !== null && typeof widgetParent !== 'string' && !(widgetParent instanceof $)) {
-            throw new TypeError('widgetParent() expects a string or a jQuery object parameter');
-        }
-
+    set widgetParent(widgetParent: string) {
         this.currentOptions.widgetParent = widgetParent;
         if (this.widget) {
             this.hide();
@@ -1864,9 +1916,10 @@ export class TempusDominusCore {
     getMoment(d?) {
         let returnMoment: moment.Moment;
 
-        if (d === undefined || d === null) {
-            returnMoment = moment(); //TODO should this use format? and locale?
-        } else if (this.hasTimeZone()) {
+        if (!d) {
+            d = moment();
+        }
+        if (this.hasTimeZone()) {
             // There is a string to parse and a default time zone
             // parse with the tz function which takes a default time zone if it is not in the format string
             returnMoment = moment.tz(d, this.parseFormats, this.currentOptions.locale, this.currentOptions.useStrict, this.currentOptions.timeZone);
@@ -1885,159 +1938,130 @@ export class TempusDominusCore {
         return this.widget ? this.hide() : this.show();
     }
 
-    ignoreReadonly(ignoreReadonly) {
-        if (arguments.length === 0) {
-            return this.currentOptions.ignoreReadonly;
-        }
-        if (typeof ignoreReadonly !== 'boolean') {
-            throw new TypeError('ignoreReadonly () expects a boolean parameter');
-        }
+    get ignoreReadonly() {
+        return this.currentOptions.ignoreReadonly;
+    }
+
+    set ignoreReadonly(ignoreReadonly: boolean) {
         this.currentOptions.ignoreReadonly = ignoreReadonly;
     }
 
-    options(newOptions) {
-        if (arguments.length === 0) {
-            return $.extend(true, {}, this.currentOptions);
-        }
-
-        if (!(newOptions instanceof Object)) {
-            throw new TypeError('options() this.options parameter should be an object');
-        }
-        $.extend(true, this.currentOptions, newOptions);
-        const self = this;
-        $.each(this.currentOptions, function (key, value) {
-            if (self[key] !== undefined) {
-                self[key](value);
-            }
-        });
+    get options() {
+        return this.deepMerge({}, this.currentOptions);
     }
 
-    date(newDate, index) {
-        index = index || 0;
-        if (arguments.length === 0) {
-            if (this.unset) {
-                return null;
-            }
-            if (this.currentOptions.allowMultidate) {
-                return this.dates.join(this.currentOptions.multidateSeparator);
-            }
-            else {
-                return this.dates[index].clone();
-            }
-        }
+    set options(newOptions: object) {
+        this.deepMerge(this.currentOptions, newOptions);
 
-        if (newDate !== null && typeof newDate !== 'string' && !moment.isMoment(newDate) && !(newDate instanceof Date)) {
-            throw new TypeError('date() parameter must be one of [null, string, moment or Date]');
-        }
+        //const self = this; //todo I don't remember why this was here. deep copy should be enough
+        //$.each(this.currentOptions, (key, value) => {
+        //    if (self[key] !== undefined) {
+        //        self[key](value);
+        //    }
+        //});
+    }
 
+    getDate(index: number = 0) {
+        if (this.unset) {
+            return null;
+        }
+        if (this.currentOptions.allowMultidate) {
+            return this.dates.join(this.currentOptions.multidateSeparator);
+        }
+        else {
+            return this.dates[index].clone();
+        }
+    }
+
+    date(newDate: moment.Moment, index: number = 0, TODO) { //this needs to be separate function
         this.setValue(newDate === null ? null : this.internalParseInputDate(newDate), index);
     }
 
-    format(newFormat) {
-        if (arguments.length === 0) {
-            return this.currentOptions.format;
-        }
+    get format(): string {
+        return this.currentOptions.format;
+    }
 
-        if (typeof newFormat !== 'string' && (typeof newFormat !== 'boolean' || newFormat !== false)) {
-            throw new TypeError(`format() expects a string or boolean:false parameter ${newFormat}`);
-        }
+    set format(newFormat: string) {
+        newFormat = newFormat || 'L LT';
 
         this.currentOptions.format = newFormat;
         if (this.actualFormat) {
             this.initFormatting(); // reinitialize formatting
         }
     }
+    get timeZone(): string {
+        return this.currentOptions.timeZone;
+    }
 
-    timeZone(newZone) {
-        if (arguments.length === 0) {
-            return this.currentOptions.timeZone;
-        }
-
-        if (typeof newZone !== 'string') {
-            throw new TypeError('newZone() expects a string parameter');
-        }
-
+    set timeZone(newZone: string) {
         this.currentOptions.timeZone = newZone;
     }
 
-    dayViewHeaderFormat(newFormat) {
-        if (arguments.length === 0) {
-            return this.currentOptions.dayViewHeaderFormat;
-        }
+    get dayViewHeaderFormat(): string {
+        return this.currentOptions.dayViewHeaderFormat;
+    }
 
-        if (typeof newFormat !== 'string') {
-            throw new TypeError('dayViewHeaderFormat() expects a string parameter');
-        }
-
+    set dayViewHeaderFormat(newFormat: string) {
         this.currentOptions.dayViewHeaderFormat = newFormat;
     }
 
-    extraFormats(formats) {
-        if (arguments.length === 0) {
-            return this.currentOptions.extraFormats;
-        }
+    get extraFormats(): string[] {
+        return this.currentOptions.extraFormats;
+    }
 
-        if (formats !== false && !(formats instanceof Array)) {
-            throw new TypeError('extraFormats() expects an array or false parameter');
-        }
-
+    set extraFormats(formats: string[]) {
         this.currentOptions.extraFormats = formats;
         if (this.parseFormats) {
             this.initFormatting(); // reinit formatting
         }
     }
 
-    disabledDates(dates) {
-        if (arguments.length === 0) {
-            return this.currentOptions.disabledDates ? $.extend({}, this.currentOptions.disabledDates) : this.currentOptions.disabledDates;
-        }
+    get disabledDates(): moment.Moment[] {
+        return this.currentOptions.disabledDates ? this.deepMerge({}, this.currentOptions.disabledDates) : this.currentOptions.disabledDates;
+    }
 
+    set disabledDates(dates: moment.Moment[]) {
         if (!dates) {
-            this.currentOptions.disabledDates = false;
+            this.currentOptions.disabledDates = undefined;
             this.update();
-            return true;
-        }
-        if (!(dates instanceof Array)) {
-            throw new TypeError('disabledDates() expects an array parameter');
+            return;
         }
         this.currentOptions.disabledDates = this.indexGivenDates(dates);
         this.currentOptions.enabledDates = false;
         this.update();
     }
 
-    enabledDates(dates) {
-        if (arguments.length === 0) {
-            return this.currentOptions.enabledDates ? $.extend({}, this.currentOptions.enabledDates) : this.currentOptions.enabledDates;
-        }
+    get enabledDates(): moment.Moment[] {
+        return this.currentOptions.enabledDates ? this.deepMerge({}, this.currentOptions.enabledDates) : this.currentOptions.enabledDates;
+    }
 
+
+    set enabledDates(dates: moment.Moment[]) {
         if (!dates) {
-            this.currentOptions.enabledDates = false;
+            this.currentOptions.enabledDates = undefined;
             this.update();
-            return true;
-        }
-        if (!(dates instanceof Array)) {
-            throw new TypeError('enabledDates() expects an array parameter');
+            return;
         }
         this.currentOptions.enabledDates = this.indexGivenDates(dates);
         this.currentOptions.disabledDates = false;
         this.update();
     }
 
-    daysOfWeekDisabled(daysOfWeekDisabled) {
-        if (arguments.length === 0) {
-            return this.currentOptions.daysOfWeekDisabled.splice(0);
-        }
+    get daysOfWeekDisabled() {
+        return this.currentOptions.daysOfWeekDisabled.splice(0);
+    }
 
-        if (typeof daysOfWeekDisabled === 'boolean' && !daysOfWeekDisabled) {
+    set daysOfWeekDisabled(daysOfWeekDisabled: number[]) {
+        if (!daysOfWeekDisabled) {
             this.currentOptions.daysOfWeekDisabled = false;
             this.update();
-            return true;
+            return;
         }
 
         if (!(daysOfWeekDisabled instanceof Array)) {
             throw new TypeError('daysOfWeekDisabled() expects an array parameter');
         }
-        this.currentOptions.daysOfWeekDisabled = daysOfWeekDisabled.reduce(function (previousValue, currentValue) {
+        this.currentOptions.daysOfWeekDisabled = daysOfWeekDisabled.reduce((previousValue, currentValue) => {
             currentValue = parseInt(currentValue, 10);
             if (currentValue > 6 || currentValue < 0 || isNaN(currentValue)) {
                 return previousValue;
@@ -2046,7 +2070,7 @@ export class TempusDominusCore {
                 previousValue.push(currentValue);
             }
             return previousValue;
-        }, []).sort();
+        }, []).sort(); //todo is sort a jquery function?
         if (this.currentOptions.useCurrent && !this.currentOptions.keepInvalid) {
             for (let i = 0; i < this.dates.length; i++) {
                 let tries = 0;
@@ -2063,15 +2087,15 @@ export class TempusDominusCore {
         this.update();
     }
 
-    maxDate(maxDate) {
-        if (arguments.length === 0) {
-            return this.currentOptions.maxDate ? this.currentOptions.maxDate.clone() : this.currentOptions.maxDate;
-        }
+    get maxDate() {
+        return this.currentOptions.maxDate ? this.currentOptions.maxDate.clone() : this.currentOptions.maxDate;
+    }
 
-        if (typeof maxDate === 'boolean' && maxDate === false) {
-            this.currentOptions.maxDate = false;
+    set maxDate(maxDate: string | moment.Moment) {
+        if (!maxDate) {
+            this.currentOptions.maxDate = undefined;
             this.update();
-            return true;
+            return;
         }
 
         if (typeof maxDate === 'string') {
@@ -2100,15 +2124,15 @@ export class TempusDominusCore {
         this.update();
     }
 
-    minDate(minDate) {
-        if (arguments.length === 0) {
-            return this.currentOptions.minDate ? this.currentOptions.minDate.clone() : this.currentOptions.minDate;
-        }
+    get minData() {
+        return this.currentOptions.minDate ? this.currentOptions.minDate.clone() : this.currentOptions.minDate;
+    }
 
-        if (typeof minDate === 'boolean' && minDate === false) {
-            this.currentOptions.minDate = false;
+    set minDate(minDate: string | moment.Moment) {
+        if (!minDate) {
+            this.currentOptions.minDate = undefined;
             this.update();
-            return true;
+            return;
         }
 
         if (typeof minDate === 'string') {
@@ -2137,13 +2161,14 @@ export class TempusDominusCore {
         this.update();
     }
 
-    defaultDate(defaultDate) {
-        if (arguments.length === 0) {
-            return this.currentOptions.defaultDate ? this.currentOptions.defaultDate.clone() : this.currentOptions.defaultDate;
-        }
+    get defaultDate() {
+        return this.currentOptions.defaultDate ? this.currentOptions.defaultDate.clone() : this.currentOptions.defaultDate;
+    }
+
+    set defaultDate(defaultDate: string | moment.Moment) {
         if (!defaultDate) {
-            this.currentOptions.defaultDate = false;
-            return true;
+            this.currentOptions.defaultDate = undefined;
+            return;
         }
 
         if (typeof defaultDate === 'string') {
@@ -2169,11 +2194,11 @@ export class TempusDominusCore {
         }
     }
 
-    locale(locale) {
-        if (arguments.length === 0) {
-            return this.currentOptions.locale;
-        }
+    get locale() {
+        return this.currentOptions.locale;
+    }
 
+    set locale(locale: string) {
         if (!moment.localeData(locale)) {
             throw new TypeError(`locale() locale ${locale} is not loaded from moment locales!`);
         }
@@ -2194,43 +2219,32 @@ export class TempusDominusCore {
         }
     }
 
-    stepping(stepping) {
-        if (arguments.length === 0) {
-            return this.currentOptions.stepping;
-        }
+    get stepping() {
+        return this.currentOptions.stepping;
+    }
 
-        stepping = parseInt(stepping, 10);
-        if (isNaN(stepping) || stepping < 1) {
+    set stepping(stepping: number) {
+        if (!stepping || stepping < 1) {
             stepping = 1;
         }
         this.currentOptions.stepping = stepping;
     }
 
-    useCurrent(useCurrent) {
-        const useCurrentOptions = ['year', 'month', 'day', 'hour', 'minute'];
-        if (arguments.length === 0) {
-            return this.currentOptions.useCurrent;
-        }
+    get userCurrent() {
+        return this.currentOptions.useCurrent;
+    }
 
-        if (typeof useCurrent !== 'boolean' && typeof useCurrent !== 'string') {
-            throw new TypeError('useCurrent() expects a boolean or string parameter');
-        }
-        if (typeof useCurrent === 'string' && useCurrentOptions.indexOf(useCurrent.toLowerCase()) === -1) {
-            throw new TypeError(`useCurrent() expects a string parameter of ${useCurrentOptions.join(', ')}`);
-        }
+    set useCurrent(useCurrent: 'year' | 'month' | 'day' | 'hour' | 'minute') {
         this.currentOptions.useCurrent = useCurrent;
     }
 
-    collapse(collapse) {
-        if (arguments.length === 0) {
-            return this.currentOptions.collapse;
-        }
+    get collapse() {
+        return this.currentOptions.collapse;
+    }
 
-        if (typeof collapse !== 'boolean') {
-            throw new TypeError('collapse() expects a boolean parameter');
-        }
+    set collapse(collapse: boolean) {
         if (this.currentOptions.collapse === collapse) {
-            return true;
+            return;
         }
         this.currentOptions.collapse = collapse;
         if (this.widget) {
@@ -2239,16 +2253,12 @@ export class TempusDominusCore {
         }
     }
 
-    icons(icons) {
-        if (arguments.length === 0) {
-            return $.extend({}, this.currentOptions.icons);
-        }
+    get icons(): Icons {
+        return this.deepMerge({}, this.currentOptions.icons);
+    }
 
-        if (!(icons instanceof Object)) {
-            throw new TypeError('icons() expects parameter to be an Object');
-        }
-
-        $.extend(this.currentOptions.icons, icons);
+    set icons(icons: Icons) {
+        this.deepMerge(this.currentOptions.icons, icons);
 
         if (this.widget) {
             this.hide();
@@ -2256,40 +2266,33 @@ export class TempusDominusCore {
         }
     }
 
-    tooltips(tooltips) {
-        if (arguments.length === 0) {
-            return $.extend({}, this.currentOptions.tooltips);
-        }
+    get tooltips(): Tooltips {
+        return this.deepMerge({}, this.currentOptions.tooltips);
+    }
 
+
+    set tooltips(tooltips: Tooltips) {
         if (!(tooltips instanceof Object)) {
             throw new TypeError('tooltips() expects parameter to be an Object');
         }
-        $.extend(this.currentOptions.tooltips, tooltips);
+        this.deepMerge(this.currentOptions.tooltips, tooltips);
         if (this.widget) {
             this.hide();
             this.show();
         }
     }
 
-    useStrict(useStrict) {
-        if (arguments.length === 0) {
-            return this.currentOptions.useStrict;
-        }
+    get useStrict(): boolean {
+            return this.currentOptions.useStrict;}
 
-        if (typeof useStrict !== 'boolean') {
-            throw new TypeError('useStrict() expects a boolean parameter');
-        }
+    set useStrict(useStrict: boolean) {
         this.currentOptions.useStrict = useStrict;
     }
 
-    sideBySide(sideBySide) {
-        if (arguments.length === 0) {
-            return this.currentOptions.sideBySide;
-        }
+    get sideBySide(): boolean {
+        return this.currentOptions.sideBySide;}
 
-        if (typeof sideBySide !== 'boolean') {
-            throw new TypeError('sideBySide() expects a boolean parameter');
-        }
+    set sideBySide(sideBySide: boolean) {
         this.currentOptions.sideBySide = sideBySide;
         if (this.widget) {
             this.hide();
@@ -2297,58 +2300,32 @@ export class TempusDominusCore {
         }
     }
 
-    viewMode(viewMode) {
-        if (arguments.length === 0) {
-            return this.currentOptions.viewMode;
-        }
+    get viewMode(): 'times' | 'days' | 'months' | 'years' | 'decades' {
+        return this.currentOptions.viewMode;
+    }
 
-        if (typeof viewMode !== 'string') {
-            throw new TypeError('viewMode() expects a string parameter');
-        }
-
-        if (TempusDominusCore.ViewModes.indexOf(viewMode) === -1) {
-            throw new TypeError(`viewMode() parameter must be one of (${TempusDominusCore.ViewModes.join(', ')}) value`);
-        }
-
+    set viewMode(viewMode: 'times' | 'days' | 'months' | 'years' | 'decades') {
         this.currentOptions.viewMode = viewMode;
-        this.currentViewMode = Math.max(TempusDominusCore.ViewModes.indexOf(viewMode) - 1, this.minViewModeNumber);
+        this.currentViewMode = Math.max(TempusDominusCore.ViewModes.indexOf(viewMode) - 1, this.minViewModeNumber); //todo?
 
         this.showMode();
     }
 
-    calendarWeeks(calendarWeeks) {
-        if (arguments.length === 0) {
-            return this.currentOptions.calendarWeeks;
-        }
+    get calendarWeeks(): boolean {
+        return this.currentOptions.calendarWeeks;
+    }
 
-        if (typeof calendarWeeks !== 'boolean') {
-            throw new TypeError('calendarWeeks() expects parameter to be a boolean value');
-        }
-
+    set calendarWeeks(calendarWeeks: boolean) {
         this.currentOptions.calendarWeeks = calendarWeeks;
         this.update();
     }
 
-    buttons(buttons) {
-        if (arguments.length === 0) {
-            return $.extend({}, this.currentOptions.buttons);
-        }
+    get buttons(): Buttons {
+        return this.deepMerge({}, this.currentOptions.buttons);
+    }
 
-        if (!(buttons instanceof Object)) {
-            throw new TypeError('buttons() expects parameter to be an Object');
-        }
-
-        $.extend(this.currentOptions.buttons, buttons);
-
-        if (typeof this.currentOptions.buttons.showToday !== 'boolean') {
-            throw new TypeError('buttons.showToday expects a boolean parameter');
-        }
-        if (typeof this.currentOptions.buttons.showClear !== 'boolean') {
-            throw new TypeError('buttons.showClear expects a boolean parameter');
-        }
-        if (typeof this.currentOptions.buttons.showClose !== 'boolean') {
-            throw new TypeError('buttons.showClose expects a boolean parameter');
-        }
+    set buttons(buttons: Buttons) {
+        this.deepMerge(this.currentOptions.buttons, buttons);
 
         if (this.widget) {
             this.hide();
@@ -2356,39 +2333,27 @@ export class TempusDominusCore {
         }
     }
 
-    keepOpen(keepOpen) {
-        if (arguments.length === 0) {
-            return this.currentOptions.keepOpen;
-        }
+    get keepOpen():boolean {
+        return this.currentOptions.keepOpen;
+    }
 
-        if (typeof keepOpen !== 'boolean') {
-            throw new TypeError('keepOpen() expects a boolean parameter');
-        }
-
+    set keepOpen(keepOpen: boolean) {
         this.currentOptions.keepOpen = keepOpen;
     }
 
-    focusOnShow(focusOnShow) {
-        if (arguments.length === 0) {
-            return this.currentOptions.focusOnShow;
-        }
-
-        if (typeof focusOnShow !== 'boolean') {
-            throw new TypeError('focusOnShow() expects a boolean parameter');
-        }
-
+    get focusOnShow(): boolean {
+        return this.currentOptions.focusOnShow;
+    }
+    
+    set focusOnShow(focusOnShow: boolean) {
         this.currentOptions.focusOnShow = focusOnShow;
     }
 
-    inline(inline) {
-        if (arguments.length === 0) {
-            return this.currentOptions.inline;
-        }
+    get inline() {
+        return this.currentOptions.inline;
+    }
 
-        if (typeof inline !== 'boolean') {
-            throw new TypeError('inline() expects a boolean parameter');
-        }
-
+    set inline(inline: boolean) {
         this.currentOptions.inline = inline;
     }
 
@@ -2396,78 +2361,60 @@ export class TempusDominusCore {
         this.setValue(null); //todo
     }
 
-    keyBinds(keyBinds) {
-        if (arguments.length === 0) {
-            return this.currentOptions.keyBinds;
-        }
-
-        this.currentOptions.keyBinds = keyBinds;
+    get keyBinds() {
+        return this.currentOptions.keyBinds;
     }
 
-    debug(debug) {
-        if (typeof debug !== 'boolean') {
-            throw new TypeError('debug() expects a boolean parameter');
-        }
+    set keyBinds(keyBinds) {
+        this.currentOptions.keyBinds = keyBinds; //todo
+    }
 
+    debug(debug: boolean) {
         this.currentOptions.debug = debug;
     }
 
-    allowInputToggle(allowInputToggle) {
-        if (arguments.length === 0) {
-            return this.currentOptions.allowInputToggle;
-        }
+    get allowInputToggle(): boolean {
+        return this.currentOptions.allowInputToggle;
+    }
 
-        if (typeof allowInputToggle !== 'boolean') {
-            throw new TypeError('allowInputToggle() expects a boolean parameter');
-        }
-
+    set allowInputToggle(allowInputToggle: boolean) {
         this.currentOptions.allowInputToggle = allowInputToggle;
     }
 
-    keepInvalid(keepInvalid) {
-        if (arguments.length === 0) {
-            return this.currentOptions.keepInvalid;
-        }
+    get keepInvalid():boolean {
+        return this.currentOptions.keepInvalid;
+    }
 
-        if (typeof keepInvalid !== 'boolean') {
-            throw new TypeError('keepInvalid() expects a boolean parameter');
-        }
+    set keepInvalid(keepInvalid: boolean) {
         this.currentOptions.keepInvalid = keepInvalid;
     }
 
-    datepickerInput(datepickerInput) {
-        if (arguments.length === 0) {
-            return this.currentOptions.datepickerInput;
-        }
+    get datepickerInput() {
+        return this.currentOptions.datepickerInput;
+    }
 
-        if (typeof datepickerInput !== 'string') {
-            throw new TypeError('datepickerInput() expects a string parameter');
-        }
 
+    set datepickerInput(datepickerInput: string) {
         this.currentOptions.datepickerInput = datepickerInput;
     }
 
-    parseInputDate(parseInputDate: Function) {
-        if (arguments.length === 0) {
-            return this.currentOptions.parseInputDate;
-        }
+    get parseInputDate(): Function {
+        return this.currentOptions.parseInputDate;
+    }
 
-        if (typeof parseInputDate !== 'function') {
-            throw new TypeError('parseInputDate() should be as function');
-        }
-
+    set parseInputDate(parseInputDate: Function) {
         this.currentOptions.parseInputDate = parseInputDate;
     }
 
-    disabledTimeIntervals(disabledTimeIntervals) {
-        if (arguments.length === 0) {
-            return this.currentOptions.disabledTimeIntervals ? $.extend({}, this.currentOptions.disabledTimeIntervals) : this.currentOptions.disabledTimeIntervals;
-        }
+    get disabledTimeIntervals() {
+        return this.currentOptions.disabledTimeIntervals ? this.deepMerge({}, this.currentOptions.disabledTimeIntervals) : this.currentOptions.disabledTimeIntervals;
+    }
 
+    set disabledTimeIntervals(disabledTimeIntervals) {
         if (!disabledTimeIntervals) {
             this.currentOptions.disabledTimeIntervals = false;
             this.update();
-            return true;
+            return;
         }
         if (!(disabledTimeIntervals instanceof Array)) {
             throw new TypeError('disabledTimeIntervals() expects an array parameter');
@@ -2476,15 +2423,15 @@ export class TempusDominusCore {
         this.update();
     }
 
-    disabledHours(hours) {
-        if (arguments.length === 0) {
-            return this.currentOptions.disabledHours ? $.extend({}, this.currentOptions.disabledHours) : this.currentOptions.disabledHours;
-        }
+    get disabledHours() {
+        return this.currentOptions.disabledHours ? this.deepMerge({}, this.currentOptions.disabledHours) : this.currentOptions.disabledHours;
+    }
 
+    set disabledHours(hours) {
         if (!hours) {
-            this.currentOptions.disabledHours = false;
+            this.currentOptions.disabledHours = undefined;
             this.update();
-            return true;
+            return;
         }
         if (!(hours instanceof Array)) {
             throw new TypeError('disabledHours() expects an array parameter');
@@ -2507,15 +2454,15 @@ export class TempusDominusCore {
         this.update();
     }
 
-    enabledHours(hours) {
-        if (arguments.length === 0) {
-            return this.currentOptions.enabledHours ? $.extend({}, this.currentOptions.enabledHours) : this.currentOptions.enabledHours;
-        }
+    get enabledHours() {
+        return this.currentOptions.enabledHours ? this.deepMerge({}, this.currentOptions.enabledHours) : this.currentOptions.enabledHours;
+    }
 
+    set enabledHours(hours) {
         if (!hours) {
             this.currentOptions.enabledHours = false;
             this.update();
-            return true;
+            return;
         }
         if (!(hours instanceof Array)) {
             throw new TypeError('enabledHours() expects an array parameter');
@@ -2538,38 +2485,34 @@ export class TempusDominusCore {
         this.update();
     }
 
-    viewDate(newDate) {
-        if (arguments.length === 0) {
-            return this.currentViewDate.clone();
-        }
+    get viewDate(): moment.Moment { //todo this will only return a moment
+        return this.currentViewDate.clone();
+    }
 
+    set viewDate(newDate: moment.Moment) {
         if (!newDate) {
             this.currentViewDate = (this.dates[0] || this.getMoment()).clone();
-            return true;
-        }
-
-        if (typeof newDate !== 'string' && !moment.isMoment(newDate) && !(newDate instanceof Date)) {
-            throw new TypeError('viewDate() parameter must be one of [string, moment or Date]');
+            return;
         }
 
         this.currentViewDate = this.internalParseInputDate(newDate);
         this.viewUpdate();
     }
 
-    allowMultidate(allowMultidate) {
-        if (typeof allowMultidate !== 'boolean') {
-            throw new TypeError('allowMultidate() expects a boolean parameter');
-        }
+    get allowMultidate(): boolean {
+        return this.currentOptions.allowMultidate;
+    }
 
+    set allowMultidate(allowMultidate: boolean) {
         this.currentOptions.allowMultidate = allowMultidate;
     }
 
-    multidateSeparator(multidateSeparator) {
-        if (arguments.length === 0) {
-            return this.currentOptions.multidateSeparator;
-        }
+    get multidateSeparator() {
+        return this.currentOptions.multidateSeparator;
+    }
 
-        if (typeof multidateSeparator !== 'string' || multidateSeparator.length > 1) {
+    set multidateSeparator(multidateSeparator: string) {
+        if (multidateSeparator.length > 1) {
             throw new TypeError('multidateSeparator expects a single character string parameter');
         }
 
