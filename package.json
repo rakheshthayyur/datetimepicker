@@ -33,7 +33,7 @@
     "grunt-stamp": "^0.3.0",
     "grunt-string-replace": "latest",
     "load-grunt-tasks": "latest",
-    "node-sass": "^4.9.1",
+    "node-sass": "^4.13.1",
     "tempusdominus-core": "^5.0.0",
     "uglify-js": "^2.7.5",
     "typescript": "3.5.3"
